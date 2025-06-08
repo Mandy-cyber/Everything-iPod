@@ -1,0 +1,9 @@
+# ignore files with no extension
+*
+!/**/
+!*.*
+
+__pycache__
+.venv
+.env
+scratch*

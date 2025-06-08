@@ -1,0 +1,3 @@
+polars
+python-dotenv
+requests
