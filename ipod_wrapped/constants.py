@@ -5,7 +5,7 @@ user_auth_root = 'http://www.last.fm/api/auth'
 song_extensions = ['.mp3', '.flac']
 
 # http://ocelma.net/last.fm-genre-tagcloud/index.html
-all_genres = set(
+all_genres = set([
     "3rd wave ska",
     "60s pop",
     "77 style punk",
@@ -108,6 +108,7 @@ all_genres = set(
     "brutal death metal",
     "c-pop",
     "cabaret",
+    "calypso",
     "cello rock",
     "celtic",
     "celtic metal",
@@ -156,6 +157,7 @@ all_genres = set(
     "cyberpunk",
     "d-beat",
     "dance",
+    "dancehall",
     "dance punk",
     "dance rock",
     "dance-pop",
@@ -620,6 +622,7 @@ all_genres = set(
     "sludge",
     "sludge metal",
     "smooth jazz",
+    "soca",
     "soft rock",
     "soul",
     "soundtrack",
@@ -709,4 +712,4 @@ all_genres = set(
     "world fusion",
     "world music",
     "wristslitters"
-)
+])
