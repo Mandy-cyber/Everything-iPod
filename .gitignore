@@ -8,3 +8,6 @@ __pycache__
 .env
 scratch*
 .vscode/
+
+# extremely rough, still working on
+playlist-maker/*

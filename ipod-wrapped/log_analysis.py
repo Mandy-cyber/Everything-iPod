@@ -13,7 +13,7 @@ load_dotenv()
 
 class LogAnalyser:
 
-    def __init__(self, log_location='../sample_files/playback.log'):
+    def __init__(self, log_location='../sample-files/playback.log'):
         self.genre_data = dict()
         self.failed_songs = dict()
 
@@ -198,14 +198,14 @@ class LogAnalyser:
 
 
     def df_to_file(self, df: pl.DataFrame = None, 
-                   output_file: str = '../sample_files/ipod_log.csv') -> None:
+                   output_file: str = '../sample-files/ipod_log.csv') -> None:
         """Writes the given dataframe, or the log dataframe, to the given
         output file.
 
         Args:
             df (pl.DataFrame, optional): The dataframe to write. Defaults to None.
             output_file (str, optional): Where to write the df to. 
-                                        Defaults to '../sample_files/ipod_log.csv'.
+                                        Defaults to '../sample-files/ipod_log.csv'.
         """
         if df is None:
             df = self.log_df
@@ -215,4 +215,4 @@ class LogAnalyser:
 if __name__ == "__main__":
     analyser = LogAnalyser()
     df = analyser.calc_total_plays()
-    analyser.df_to_file(df, '../sample_files/total_plays.csv')
+    analyser.df_to_file(df, '../sample-files/total_plays.csv')
