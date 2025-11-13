@@ -3,11 +3,14 @@
 !/**/
 !*.*
 
+# misc
 __pycache__
 .venv
 .env
 scratch*
 .vscode/
+*.sh
 
 # extremely rough, still working on
 playlist-maker/*
+guide-docs/*

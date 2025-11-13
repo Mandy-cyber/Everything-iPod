@@ -1,0 +1,47 @@
+# The Letter - Status Bar Screen
+# Displays in menus and browsers
+# Author: Mandy-Cyber
+# Version: 1.0
+
+# Background Image
+%X(letter_home_screen.bmp)
+
+#-----------------------------------------
+# PRELOADING & SETUP
+#-----------------------------------------
+# Preload Cover Art
+%Cl(0,0,45,45)
+
+# Font Definitions
+%Fl(2,16-Adobe-Helvetica-AF.fnt)
+
+# Hide the default status bar
+%wd
+
+#-----------------------------------------
+# TOP BAR
+#-----------------------------------------
+# iPod Text
+%V(20,8,30,30,1)
+%al iPod
+
+# Clock
+%V(145,8,30,30,1)
+%ac%cH:%cM
+
+# Battery
+%V(280,8,30,30,1)
+%ar%bl%%
+
+#-----------------------------------------
+# ALBUM ART DISPLAY
+#-----------------------------------------
+%V(256,39,45,45,1)
+%Cd
+
+#-----------------------------------------
+# BROWSING
+#-----------------------------------------
+# Menu list
+%Vi(-,30,50,170,180,2)
+%Vf(6D4C3DFF)
