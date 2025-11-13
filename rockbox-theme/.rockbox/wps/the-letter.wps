@@ -28,9 +28,9 @@
 #-----------------------------------------
 # TOP BAR
 #-----------------------------------------
-# iPod Text
-%V(20,8,30,30,1)
-%al iPod
+# Volume Text
+%V(20,8,35,30,1)
+%al%pvdB
 
 # Clock
 %V(145,8,30,30,1)
@@ -44,10 +44,15 @@
 # TRACK & NEXT TRACK INFO
 #-----------------------------------------
 # Current Track
-%V(160,95,80,100,1)
+%V(160,95,80,50,1)
 %al%s%?it<%it|Unknown>
 %al%s%?id<%id|Unknown>
 %al%s%?ia<%ia|Unknown>
+
+# Track Position
+%V(160,147,80,20,2)
+%Vf(BA8F60)
+%al%pp/%pe
 
 # Next Track
 %V(50,179,190,30,2)
