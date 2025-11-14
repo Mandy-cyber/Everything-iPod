@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 import requests
 from time import sleep
 from pymongo import MongoClient, UpdateOne
-from typing import Optional
+from typing import Optional, List
 
 from constants import *
 
@@ -107,6 +107,7 @@ class LogAnalyser:
         if not found_files or len(found_files) == 0:
             return None
         return found_files[0]
+        
         
     @staticmethod
     def load_logs(file_loc: str) -> list:
@@ -441,6 +442,237 @@ class LogAnalyser:
         df.write_csv(output_file)
         
         
+    def load_stats_from_db(self) -> pl.DataFrame:
+        """Loads song statistics from MongoDB into a polars DataFrame"""
+        # fetch all documents from mongo
+        all_docs = list(self.song_collection.find({}, projection={'_id': 0}))
+
+        if not all_docs:
+            return pl.DataFrame()
+
+        return pl.DataFrame(all_docs)
+
+
+    def merge_duplicate_genres(self) -> None:
+        """Merges any duplicate genres (e.g. hip-hop vs hip hop) in the db.
+        Fixes with a batch update if necessary."""
+        bulk_operations = []
+
+        # fetch all songs with genres
+        all_docs = self.song_collection.find({'genres': {'$exists': True, '$ne': ''}})
+
+        for doc in all_docs:
+            genres = doc.get('genres', '')
+            if not genres:
+                continue
+
+            # split, normalize, rejoin
+            genre_list = [g.strip() for g in genres.split(',')]
+            normalized_genres = [genre_mappings.get(g.lower(), g) for g in genre_list]
+
+            # remove duplicates
+            seen = set()
+            unique_genres = []
+            for g in normalized_genres:
+                if g.lower() not in seen:
+                    seen.add(g.lower())
+                    unique_genres.append(g)
+
+            new_genre_str = ','.join(unique_genres)
+
+            # only update if genres changed
+            if new_genre_str != genres:
+                bulk_operations.append(
+                    UpdateOne(
+                        {'_id': doc['_id']},
+                        {'$set': {'genres': new_genre_str}}
+                    )
+                )
+
+        # batch update
+        if bulk_operations:
+            result = self.song_collection.bulk_write(bulk_operations)
+            print(f"Genre normalization: {result.modified_count} documents updated")
+        else:
+            print("No genre duplicates found")
+
+
+    def find_top_genres(self, n: int = 3) -> List[str]:
+        """Finds the top n genres listened to based on
+        total_elapsed_ms stats.
+
+        Args:
+            n (int, optional): The number of top genres to show. Defaults to 3.
+
+        Returns:
+            List[str]: [first, second, third, ..., N] top genres
+        """
+        # load stats from db
+        stats_df = self.load_stats_from_db()
+
+        if stats_df.is_empty():
+            return []
+
+        # filter out rows missing info
+        stats_df = stats_df.filter(
+            (pl.col('genres').is_not_null()) &
+            (pl.col('genres') != '') &
+            (pl.col('total_elapsed_ms').is_not_null())
+        )
+
+        # explode genres into separate rows
+        genre_rows = []
+        for row in stats_df.iter_rows(named=True):
+            genres = row['genres'].split(',')
+            elapsed = row['total_elapsed_ms']
+            for genre in genres:
+                genre = genre.strip()
+                if genre:
+                    genre_rows.append({'genre': genre, 'total_elapsed_ms': elapsed})
+
+        if not genre_rows:
+            return []
+
+        genre_df = pl.DataFrame(genre_rows)
+
+        # aggregate by genre
+        top_genres = genre_df.group_by('genre').agg(
+            pl.col('total_elapsed_ms').sum().alias('total_time')
+        ).sort('total_time', descending=True).head(n)
+
+        return top_genres['genre'].to_list()
+
+
+    def find_top_artists(self, n: int = 3) -> List[str]:
+        """Finds the top n artists listened to based on
+        total_plays stats.
+
+        Args:
+            n (int, optional): The number of top artists to show. Defaults to 3.
+
+        Returns:
+            List[str]: [first, second, third, ..., N] top artists
+        """
+        # load stats from db
+        stats_df = self.load_stats_from_db()
+
+        if stats_df.is_empty():
+            return []
+
+        # filter out rows without total_plays
+        stats_df = stats_df.filter(pl.col('total_plays').is_not_null())
+
+        # aggregate by artist
+        top_artists = stats_df.group_by('artist').agg(
+            pl.col('total_plays').sum().alias('total_plays')
+        ).sort('total_plays', descending=True).head(n)
+
+        return top_artists['artist'].to_list()
+    
+    
+    def find_top_albums(self, n: int = 3) -> List[str]:
+        """Finds the top n albums listened to based on
+        total_plays stats.
+
+        Args:
+            n (int, optional): The number of top albums to show. Defaults to 3.
+
+        Returns:
+            List[str]: [first, second, third, ..., N] top albums
+        """
+        # load stats from db
+        stats_df = self.load_stats_from_db()
+
+        if stats_df.is_empty():
+            return []
+
+        # filter out rows without total_plays
+        stats_df = stats_df.filter(pl.col('total_plays').is_not_null())
+
+        # aggregate by album (and artist in case of same-named albums)
+        top_albums = stats_df.group_by(['album', 'artist']).agg(
+            pl.col('total_plays').sum().alias('total_plays')
+        ).sort('total_plays', descending=True).head(n)
+
+        # return album names (w/artist for context)
+        return [f"{row['album']} - {row['artist']}" for row in top_albums.iter_rows(named=True)]
+    
+    
+    def find_most_listened_to(self) -> tuple:
+        """Finds the song most listened to by total_plays_count.
+
+        Returns:
+            tuple: (song, artist, album)
+        """
+        # load stats from db
+        stats_df = self.load_stats_from_db()
+
+        if stats_df.is_empty():
+            return None
+
+        # filter out rows without total_plays
+        stats_df = stats_df.filter(pl.col('total_plays').is_not_null())
+
+        # sort by total_plays and get top song
+        top_song = stats_df.sort('total_plays', descending=True).head(1)
+
+        if len(top_song) == 0:
+            return None
+
+        row = top_song.row(0, named=True)
+        return (row['song'], row['artist'], row['album'])
+
+
+    def calc_total_play_time(self) -> int:
+        """Calculates the total amount of time listened in minutes.
+        An aggregation of total_elapsed_ms."""
+        # load stats from db
+        stats_df = self.load_stats_from_db()
+
+        if stats_df.is_empty():
+            return 0
+
+        # filter out rows without total_elapsed_ms
+        stats_df = stats_df.filter(pl.col('total_elapsed_ms').is_not_null())
+
+        # sum elapsed time + convert to minutes
+        total_ms = stats_df['total_elapsed_ms'].sum()
+        total_minutes = total_ms // 60000
+        return total_minutes
+    
+    
+    def display_stats(self) -> dict:
+        """"""
+        # calculations
+        top_genres = self.find_top_genres()
+        top_artists = self.find_top_artists()
+        top_albums = self.find_top_albums()
+        
+        # setup
+        stats = {
+            "top_genres": [],
+            "top_artists": [],
+            "top_albums": [],
+            "most_listened_song": self.find_most_listened_to(),
+            "total_play_time_mins": self.calc_total_play_time()
+        }
+        
+        # format genres
+        for genre in top_genres:
+            stats["top_genres"].append({"genre": genre})
+        
+        # format artists
+        for artist in top_artists:
+            stats["top_artists"].append({"artist": artist})
+        
+        # format albums
+        for album in top_albums:
+            stats["top_albums"].append({"album": album})
+            
+        print(json.dumps(stats, indent=4))
+        return stats
+    
+    
     def run(self) -> None:
         """Runs the log analyser from start to finish"""
         log_location = self.find_playback_log()
@@ -456,6 +688,10 @@ class LogAnalyser:
         # finish updating db
         self.batch_add_to_db({}, final_add=True)
         self.update_play_stats_in_db()
+        
+        # run stats
+        self.display_stats()
+        
 
         
 if __name__ == "__main__":
