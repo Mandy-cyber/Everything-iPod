@@ -1,4 +1,3 @@
-from hashlib import md5
 import os
 import re
 import json
@@ -6,6 +5,7 @@ import polars as pl
 from dotenv import load_dotenv
 import requests
 from time import sleep
+from pymongo import MongoClient, UpdateOne
 
 from constants import *
 
@@ -14,16 +14,31 @@ load_dotenv()
 class LogAnalyser:
 
     def __init__(self, log_location='../sample-files/playback.log'):
-        self.genre_data = dict()
-        self.failed_songs = dict()
+        # setup mongo
+        client = MongoClient(os.getenv('MONGODB_URI'))
+        db = client.song_db
+        self.song_collection = db.songs
 
+        self.failed_albums = dict()
+        self.batch_entries = []
+        self.genre_data = dict()
+        self.seen_songs = set()
+
+        # load existing data from mongo
+        raw_data = list(self.song_collection.find({}, projection={
+            '_id': 0, 'album': 1, 'artist': 1, 'song': 1, 'genres': 1
+        }))
+        for entry in raw_data:
+            self.genre_data[f"{entry['album']}:{entry['artist']}"] = entry['genres']
+            self.seen_songs.add(f"{entry['song']}:{entry['artist']}")
+
+        # setup lastfm + read logs
         try:
-            self.api_key = os.getenv('API_KEY')
-            self.shared_secret = os.getenv('SHARED_SECRET')
+            self.api_key = os.getenv('LASTFM_API_KEY')
+            self.shared_secret = os.getenv('LASTFM_SHARED_SECRET')
             self.log_data = self.load_logs(log_location)
-            self.log_df = self.logs_to_df()
+            self.log_df = self.logs_to_df() # TODO: dont bundle this in with initializer code
             print(f"Loaded {len(self.log_df)} log entries")
-            print(self.log_df.head())
         except Exception as e:
             print(f"Could not analyze logs: {e}")
             return
@@ -41,10 +56,53 @@ class LogAnalyser:
         log_lines = []
         with open(file_loc, 'r') as file:
             for line in file:
-                if not line.startswith('#'):
-                    log_lines.append(line)
+                try:
+                    if not line.startswith('#'):
+                        log_lines.append(line)
+                except:
+                    continue
         return log_lines
     
+
+    def is_valid_track_filename(self, filename: str) -> bool:
+        """Checks if the filename has a valid audio extension
+
+        Args:
+            filename (str): the filename to check
+
+        Returns:
+            bool: True if valid, False otherwise
+        """
+        return any(filename.endswith(ext) for ext in song_extensions)
+
+
+    def is_corrupted_metadata(self, text: str) -> bool:
+        """Checks if text looks like corrupted log data
+
+        Args:
+            text (str): the text to check
+
+        Returns:
+            bool: True if corrupted, False otherwise
+        """
+        return ':' in text or text.isdigit() or len(text) == 0
+
+
+    def extract_song_from_filename(self, track_filename: str) -> str:
+        """Extracts song title from track filename
+
+        Args:
+            track_filename (str): the full track filename
+
+        Returns:
+            str: the extracted song title
+        """
+        if ' - ' in track_filename:
+            song = self.clean_song(track_filename.split(' - ', 1)[1])
+        else:
+            song = self.clean_song(track_filename)
+        return song
+
 
     def parse_track_info(self, path: str) -> tuple:
         """Parses track info from the given path.
@@ -56,6 +114,46 @@ class LogAnalyser:
             tuple: (album, artist, song) found from the path
         """
         path_sections = path.split('/')[1:]
+
+        # find the "Music" directory index
+        music_idx = -1
+        for i in range(len(path_sections) - 1, -1, -1):
+            if path_sections[i] == 'Music':
+                music_idx = i
+                break
+
+        # if we found "Music", adjust indexing
+        if music_idx >= 0:
+            adjusted_sections = path_sections[music_idx + 1:]
+
+            # need at least Artist/Album/Track
+            if len(adjusted_sections) < 3:
+                raise ValueError(f"Not enough sections after Music: {path}")
+
+            artist = adjusted_sections[0].strip()
+            album = self.fix_explicit_label(adjusted_sections[1].strip())
+            track_filename = adjusted_sections[2]
+
+            # check track extension
+            if not self.is_valid_track_filename(track_filename):
+                raise ValueError(f"Track filename missing valid extension: {track_filename}")
+
+            # check artist/album corruption
+            if self.is_corrupted_metadata(artist):
+                raise ValueError(f"Artist looks corrupted: {artist}")
+
+            song = self.extract_song_from_filename(track_filename)
+
+            # ensure song title is valid
+            if not song or song.lower() in ['flac', 'mp3', 'ogg', 'wav', 'm4a']:
+                raise ValueError(f"Invalid song title: {song}")
+
+            return album, artist, song
+
+        # fallback to original logic if no Music directory found
+        if len(path_sections) < 5:
+            raise ValueError(f"Path doesn't have enough sections: {path}")
+
         artist = path_sections[2].strip()
         album = self.fix_explicit_label(path_sections[3].strip())
         song = self.clean_song(path_sections[4].split('-')[1])
@@ -63,7 +161,7 @@ class LogAnalyser:
     
 
     def fix_explicit_label(self, file: str) -> str:
-        """Removes the 'Explicit; tag and re-adds it neatly to the
+        """Removes the 'Explicit' tag and re-adds it neatly to the
         given string. This is because sometimes (often) the rockbox
         log cuts it off...
 
@@ -89,14 +187,17 @@ class LogAnalyser:
         Returns:
             str: the 'cleaned' song name
         """
-        song_with_ext = '.'.join(song.split('.')[1:])
-        song_wout_ext = song_with_ext
-
-        # remove extension
+        # remove file extension first
+        song_wout_ext = song
         for ext in song_extensions:
-            if song_with_ext.endswith(ext):
-                song_wout_ext = song_with_ext.split(ext)[0]
+            if song.endswith(ext):
+                song_wout_ext = song[:-len(ext)]
                 break
+
+        # remove track number prefix (e.g., "01. " or "1 ")
+        parts = song_wout_ext.split('.', 1)
+        if len(parts) == 2 and parts[0].strip().isdigit():
+            song_wout_ext = parts[1]
 
         return self.fix_explicit_label(song_wout_ext.strip())
 
@@ -116,19 +217,35 @@ class LogAnalyser:
             if match:
                 try:
                     album, artist, song = self.parse_track_info(str(match.group(4)))
+
+                    # find genre info based on album
+                    album_key = f"{album}:{artist}"
+                    if album_key in self.genre_data:
+                        genres = self.genre_data[album_key]
+                    else:
+                        genres = self.find_album_genres((artist, album))
+                        self.genre_data[album_key] = genres
+
+                    # add song to database if not already seen
+                    song_key = f"{song}:{artist}"
+                    if song_key not in self.seen_songs:
+                        self.batch_add_to_db({"song": song, "album": album, "artist": artist, "genres": genres})
+                        self.seen_songs.add(song_key)
+
+                    # create full entry for calculations
                     entries.append({
                         'timestamp': int(match.group(1)),
                         'elapsed_ms': int(match.group(2)),
                         'length_ms': int(match.group(3)),
                         'file_path': str(match.group(4)),
                         'album': album,
-                        'genres': self.find_song_genres((artist, song)),
+                        'genres': genres,
                         'artist': artist,
-                        "song": song
+                        'song': song
                     })
                 except Exception as e:
                     failed.append(log_entry)
-                    print(f'failed: {log_entry}')
+                    print(log_entry, e)
 
         df = pl.DataFrame(entries)
         if len(failed) > 0:
@@ -136,47 +253,63 @@ class LogAnalyser:
 
         return df
     
+    
+    def batch_add_to_db(self, entry: dict, final_add: bool = False) -> bool:
+        """Adds the given entry to the MongoDB collection"""
+        if entry and entry != {}:
+            self.batch_entries.append(entry)
+        
+        if len(self.batch_entries) == BATCH_SIZE or final_add:
+            try:
+                result = self.song_collection.insert_many(self.batch_entries)
+                self.batch_entries.clear()
+                print(result.inserted_ids)
+            except Exception as e:
+                print(f"Failed to batch add entries to db: {e}")
+        
 
-    def find_song_genres(self, entry: tuple) -> str:
-        """Finds the genres associated with the given entry
+    def find_album_genres(self, entry: tuple) -> str:
+        """Finds the genres associated with the given album
 
         Args:
-            entry (tuple): (artist, track) to find the genres for
+            entry (tuple): (artist, album) to find the genres for
 
         Returns:
-            str: the genres associated with the given entry
+            str: the genres associated with the given album
         """
-        artist, track = entry
-        # check if we've looked it up before -- TODO: eventually store data e.g. in mongo
-        if track in self.failed_songs:
+        artist, album = entry
+        genre_str = ""
+        album_key = f"{album}:{artist}"
+
+        if album_key in self.failed_albums:
             return ""
-        if track in self.genre_data:
-            return self.genre_data[track]
-        
-        # make request to last.fm
-        song_genres = []
-        req_str = '{}/2.0/?method=track.getInfo&api_key={}&artist={}&track={}&autocorrect=1&format=json'.format(
-            lastfm_root, self.api_key, artist, track.replace(" (Explicit)", "")
+
+        # make request to last.fm for album info
+        album_genres = []
+        req_str = '{}/2.0/?method=album.getInfo&api_key={}&artist={}&album={}&autocorrect=1&format=json'.format(
+            lastfm_root, self.api_key, artist, album.replace(" (Explicit)", "")
         )
         resp = requests.get(req_str)
-        
+
         try:
             # grab valid genre tags
-            toptags = json.loads(resp.text)['track'].get('toptags', {})
-            for tag in toptags['tag']:
+            album_data = json.loads(resp.text).get('album', {})
+            toptags = album_data.get('tags', {})
+
+            # handle both 'tags' and 'tag' structures from API
+            tag_list = toptags.get('tag', [])
+            if not isinstance(tag_list, list):
+                tag_list = [tag_list] if tag_list else []
+
+            for tag in tag_list:
                 tag_name = tag['name'].lower().strip()
                 if tag_name in all_genres:
-                    song_genres.append(tag_name)
+                    album_genres.append(tag_name)
 
-            genre_str = ','.join(song_genres)
-            self.genre_data[track] = genre_str
+            genre_str = ','.join(album_genres)
         except Exception as e:
-            # probably poorly formmated track name
-            print(f"Failed to find genres for track '{track}' by {artist}")
-            self.failed_songs[track] = artist
-        
-        if len(genre_str) == 0:
-            genre_str = ""
+            print(f"Failed to find genres for album '{album}' by {artist}")
+            self.failed_albums[album_key] = True
 
         sleep(0.5) # last.fm rate limiting
         return genre_str
@@ -197,14 +330,45 @@ class LogAnalyser:
         return summary
 
 
-    def df_to_file(self, df: pl.DataFrame = None, 
+    def update_play_stats_in_db(self):
+        """Updates play statistics in MongoDB"""
+        # setup
+        play_stats = self.calc_total_plays()
+        bulk_operations = []
+        print(f"Updating play stats for {len(play_stats)} songs...")
+
+        for row in play_stats.iter_rows(named=True):
+            # replace with current stats from log
+            updated_stats = {
+                'total_plays': row['total_plays'],
+                'song_length_ms': row['song_length_ms'],
+                'total_elapsed_ms': row['total_elapsed_ms']
+            }
+
+            # add to bulk operations
+            bulk_operations.append(
+                UpdateOne(
+                    {'song': row['song'], 'artist': row['artist']},
+                    {'$set': updated_stats}
+                )
+            )
+
+        # execute batch update
+        if bulk_operations:
+            result = self.song_collection.bulk_write(bulk_operations)
+            print(f"Play stats updated: {result.modified_count} documents modified")
+        else:
+            print("No play stats to update")
+
+
+    def df_to_file(self, df: pl.DataFrame = None,
                    output_file: str = '../sample-files/ipod_log.csv') -> None:
         """Writes the given dataframe, or the log dataframe, to the given
         output file.
 
         Args:
             df (pl.DataFrame, optional): The dataframe to write. Defaults to None.
-            output_file (str, optional): Where to write the df to. 
+            output_file (str, optional): Where to write the df to.
                                         Defaults to '../sample-files/ipod_log.csv'.
         """
         if df is None:
@@ -214,5 +378,5 @@ class LogAnalyser:
         
 if __name__ == "__main__":
     analyser = LogAnalyser()
-    df = analyser.calc_total_plays()
-    analyser.df_to_file(df, '../sample-files/total_plays.csv')
+    analyser.batch_add_to_db({}, final_add=True)
+    analyser.update_play_stats_in_db()

@@ -2,7 +2,9 @@ ipod_log_pattern = r'^(\d+):(\d+):(\d+):(.+)$'
 
 lastfm_root = 'http://ws.audioscrobbler.com'
 user_auth_root = 'http://www.last.fm/api/auth'
-song_extensions = ['.mp3', '.flac']
+song_extensions = ['.mp3', '.flac', '.ogg', '.wav', '.m4a']
+
+BATCH_SIZE = 50
 
 # http://ocelma.net/last.fm-genre-tagcloud/index.html
 all_genres = set([
