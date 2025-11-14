@@ -1,11 +1,14 @@
 import os
 import re
+import glob
 import json
+import subprocess
 import polars as pl
 from dotenv import load_dotenv
 import requests
 from time import sleep
 from pymongo import MongoClient, UpdateOne
+from typing import Optional
 
 from constants import *
 
@@ -13,7 +16,7 @@ load_dotenv()
 
 class LogAnalyser:
 
-    def __init__(self, log_location='../sample-files/playback.log'):
+    def __init__(self):
         # setup mongo
         client = MongoClient(os.getenv('MONGODB_URI'))
         db = client.song_db
@@ -36,12 +39,74 @@ class LogAnalyser:
         try:
             self.api_key = os.getenv('LASTFM_API_KEY')
             self.shared_secret = os.getenv('LASTFM_SHARED_SECRET')
-            self.log_data = self.load_logs(log_location)
-            self.log_df = self.logs_to_df() # TODO: dont bundle this in with initializer code
-            print(f"Loaded {len(self.log_df)} log entries")
         except Exception as e:
             print(f"Could not analyze logs: {e}")
             return
+    
+    @staticmethod
+    def find_ipod() -> Optional[str]:
+        """Find the device path for a connected iPod"""
+        ipod_found = False
+
+        # check for USB connection
+        lsusb_output = subprocess.run(['lsusb'], capture_output=True, text=True)
+
+        for line in lsusb_output.stdout.split('\n'):
+            if 'iPod' in line or '05ac:' in line:  # 05ac = Apple's vendor ID
+                ipod_found = True
+                break
+
+        if not ipod_found:
+            print("No iPod found. Make sure it is connected via USB")
+            return None
+
+        # search for mount point
+        mount_output = subprocess.run(['mount'], capture_output=True, text=True)
+
+        ipod_mounts = []
+        for line in mount_output.stdout.split('\n'):
+            if any(keyword in line.lower() for keyword in ['ipod', 'apple']):
+                ipod_mounts.append(line)
+
+        if ipod_mounts:
+            for mount in ipod_mounts:
+                # parse mount point
+                match = re.search(r'on (.+?) type', mount)
+                if match:
+                    return match.group(1)
+
+        # also check /proc/mounts
+        try:
+            with open('/proc/mounts', 'r') as f:
+                for line in f:
+                    if 'ipod' in line.lower():
+                        parts = line.split()
+                        if len(parts) >= 2:
+                            return parts[1]
+        except Exception as e:
+            pass
+
+        return None
+
+    
+    @staticmethod
+    def find_playback_log() -> Optional[str]:
+        """Finds the location of the playback log on the iPod
+
+        Returns:
+            str: The location of the log file
+        """
+        # find ipod
+        ipod_location = LogAnalyser.find_ipod()
+        if not ipod_location:
+            return None
+        
+        # look for `playback.log`
+        full_pattern = os.path.join(f"{ipod_location}/.rockbox", '**', "playback.log")
+        found_files = glob.glob(full_pattern, recursive=True)
+        if not found_files or len(found_files) == 0:
+            return None
+        return found_files[0]
         
     @staticmethod
     def load_logs(file_loc: str) -> list:
@@ -54,7 +119,7 @@ class LogAnalyser:
             list: a list of each line in the log file
         """
         log_lines = []
-        with open(file_loc, 'r') as file:
+        with open(file_loc, 'r', encoding='utf-8', errors='ignore') as file:
             for line in file:
                 try:
                     if not line.startswith('#'):
@@ -311,7 +376,7 @@ class LogAnalyser:
             print(f"Failed to find genres for album '{album}' by {artist}")
             self.failed_albums[album_key] = True
 
-        sleep(0.5) # last.fm rate limiting
+        sleep(0.5) # TODO: add proper rate limiting logic
         return genre_str
     
 
@@ -374,9 +439,25 @@ class LogAnalyser:
         if df is None:
             df = self.log_df
         df.write_csv(output_file)
+        
+        
+    def run(self) -> None:
+        """Runs the log analyser from start to finish"""
+        log_location = self.find_playback_log()
+        if not log_location:
+            print("Could not find the iPod. Make sure it is connected via USB")
+            return
+        
+        # read and analyse logs
+        self.log_data = self.load_logs(log_location)
+        self.log_df = self.logs_to_df()
+        print(f"Loaded {len(self.log_df)} log entries")
+        
+        # finish updating db
+        self.batch_add_to_db({}, final_add=True)
+        self.update_play_stats_in_db()
 
         
 if __name__ == "__main__":
     analyser = LogAnalyser()
-    analyser.batch_add_to_db({}, final_add=True)
-    analyser.update_play_stats_in_db()
+    analyser.run()
