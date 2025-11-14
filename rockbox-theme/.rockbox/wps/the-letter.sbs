@@ -12,6 +12,10 @@
 # Preload Cover Art
 %Cl(0,0,45,45)
 
+# Preload Screen Images
+%xl(U,usb_screen.bmp)
+%xl(L,lock_screen.bmp)
+
 # Font Definitions
 %Fl(2,16-Adobe-Helvetica-AF.fnt)
 
@@ -45,3 +49,26 @@
 # Menu list
 %Vi(-,30,50,170,180,2)
 %Vf(6D4C3DFF)
+
+#-----------------------------------------
+# USB SCREEN
+#-----------------------------------------
+# USB
+%?if(%cs, =, 21)<%Vd(usb)|>
+
+%Vl(usb,0,0,320,240,-)
+%xd(U)
+
+#-----------------------------------------
+# LOCK SCREEN
+#-----------------------------------------
+# Lock Screen
+%?mh<%Vd(lockscreen)|>
+
+%Vl(lockscreen,0,0,320,240,-)
+%xd(L)
+
+#-----------------------------------------
+# QUICK SCREEN
+#-----------------------------------------
+# TODO: figure out how to move elements
