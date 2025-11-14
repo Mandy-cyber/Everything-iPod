@@ -11,8 +11,10 @@ scratch*
 .vscode/
 *.sh
 total_plays.csv
+sample-files/album-art/
 
 # extremely rough, still working on
 playlist-maker/*
 guide-docs/
 helpers/
+app.py
