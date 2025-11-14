@@ -1,12 +1,60 @@
-ipod_log_pattern = r'^(\d+):(\d+):(\d+):(.+)$'
+import subprocess
+from typing import Optional
 
-lastfm_root = 'http://ws.audioscrobbler.com'
-user_auth_root = 'http://www.last.fm/api/auth'
+# misc.
+BATCH_SIZE = 50
+ipod_log_pattern = r'^(\d+):(\d+):(\d+):(.+)$'
 song_extensions = ['.mp3', '.flac', '.ogg', '.wav', '.m4a']
 
-BATCH_SIZE = 50
+# lastfm
+lastfm_root = 'http://ws.audioscrobbler.com'
+user_auth_root = 'http://www.last.fm/api/auth'
 
-# genre normalization mappings for merging duplicate genres
+def find_ipod() -> Optional[str]:
+    """Find the device path for a connected iPod"""
+    ipod_found = False
+
+    # check for USB connection
+    lsusb_output = subprocess.run(['lsusb'], capture_output=True, text=True)
+
+    for line in lsusb_output.stdout.split('\n'):
+        if 'iPod' in line or '05ac:' in line:  # 05ac = Apple's vendor ID
+            ipod_found = True
+            break
+
+    if not ipod_found:
+        print("No iPod found. Make sure it is connected via USB")
+        return None
+
+    # search for mount point
+    mount_output = subprocess.run(['mount'], capture_output=True, text=True)
+
+    ipod_mounts = []
+    for line in mount_output.stdout.split('\n'):
+        if any(keyword in line.lower() for keyword in ['ipod', 'apple']):
+            ipod_mounts.append(line)
+
+    if ipod_mounts:
+        for mount in ipod_mounts:
+            # parse mount point
+            match = re.search(r'on (.+?) type', mount)
+            if match:
+                return match.group(1)
+
+    # also check /proc/mounts
+    try:
+        with open('/proc/mounts', 'r') as f:
+            for line in f:
+                if 'ipod' in line.lower():
+                    parts = line.split()
+                    if len(parts) >= 2:
+                        return parts[1]
+    except Exception as e:
+        pass
+
+    return None
+
+# normalization for merging duplicate genres
 genre_mappings = {
     'hip hop': 'hip-hop',
     'hiphop': 'hip-hop',
@@ -84,7 +132,7 @@ genre_mappings = {
     'hard rock': 'hardrock',
 }
 
-# http://ocelma.net/last.fm-genre-tagcloud/index.html
+# Source: http://ocelma.net/last.fm-genre-tagcloud/index.html
 all_genres = set([
     "3rd wave ska",
     "60s pop",

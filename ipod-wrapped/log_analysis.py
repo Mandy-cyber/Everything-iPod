@@ -3,6 +3,7 @@ import re
 import glob
 import json
 import subprocess
+import sqlite3
 import polars as pl
 from dotenv import load_dotenv
 import requests
@@ -16,78 +17,82 @@ load_dotenv()
 
 class LogAnalyser:
 
-    def __init__(self):
-        # setup mongo
-        client = MongoClient(os.getenv('MONGODB_URI'))
-        db = client.song_db
-        self.song_collection = db.songs
+    def __init__(self, db_type: str = 'mongo', db_path: str = '../sample-files/ipod_wrapped.db'):
+        """Initialize LogAnalyser with chosen database type
+
+        Args:
+            db_type (str): Either 'mongo' or 'local'. Defaults to 'mongo'.
+            db_path (str): Path to local SQLite db file. Defaults to '../sample-files/ipod_wrapped.db'.
+        """
+        self.db_type = db_type
+        self.db_path = db_path
+
+        # setup database connection
+        if self.db_type == 'mongo':
+            self._setup_mongo()
+        else:
+            self._setup_local_db()
 
         self.failed_albums = dict()
         self.batch_entries = []
         self.genre_data = dict()
         self.seen_songs = set()
 
-        # load existing data from mongo
-        raw_data = list(self.song_collection.find({}, projection={
-            '_id': 0, 'album': 1, 'artist': 1, 'song': 1, 'genres': 1
-        }))
+        # load existing data from db
+        raw_data = self._fetch_all_songs()
         for entry in raw_data:
             self.genre_data[f"{entry['album']}:{entry['artist']}"] = entry['genres']
             self.seen_songs.add(f"{entry['song']}:{entry['artist']}")
 
-        # setup lastfm + read logs
+        # setup lastfm
         try:
             self.api_key = os.getenv('LASTFM_API_KEY')
             self.shared_secret = os.getenv('LASTFM_SHARED_SECRET')
         except Exception as e:
             print(f"Could not analyze logs: {e}")
             return
+
+
+    def _setup_mongo(self):
+        """Setup MongoDB connection"""
+        client = MongoClient(os.getenv('MONGODB_URI'))
+        db = client.song_db
+        self.song_collection = db.songs
+
+
+    def _setup_local_db(self):
+        """Setup SQLite local database"""
+        self.conn = sqlite3.connect(self.db_path)
+        self.cursor = self.conn.cursor()
+
+        # create table if not exists
+        self.cursor.execute('''
+            CREATE TABLE IF NOT EXISTS songs (
+                song TEXT NOT NULL,
+                artist TEXT NOT NULL,
+                album TEXT NOT NULL,
+                genres TEXT,
+                total_plays INTEGER DEFAULT 0,
+                song_length_ms INTEGER,
+                total_elapsed_ms INTEGER DEFAULT 0,
+                PRIMARY KEY (song, artist)
+            )
+        ''')
+        self.conn.commit()
+
+
+    def _fetch_all_songs(self) -> list:
+        """Fetch all songs from database (abstracted for both db types)"""
+        if self.db_type == 'mongo':
+            return list(self.song_collection.find({}, projection={
+                '_id': 0, 'album': 1, 'artist': 1, 'song': 1, 'genres': 1
+            }))
+        else:
+            self.cursor.execute('SELECT song, artist, album, genres FROM songs')
+            rows = self.cursor.fetchall()
+            return [{'song': row[0], 'artist': row[1], 'album': row[2], 'genres': row[3]}
+                    for row in rows]
     
-    @staticmethod
-    def find_ipod() -> Optional[str]:
-        """Find the device path for a connected iPod"""
-        ipod_found = False
-
-        # check for USB connection
-        lsusb_output = subprocess.run(['lsusb'], capture_output=True, text=True)
-
-        for line in lsusb_output.stdout.split('\n'):
-            if 'iPod' in line or '05ac:' in line:  # 05ac = Apple's vendor ID
-                ipod_found = True
-                break
-
-        if not ipod_found:
-            print("No iPod found. Make sure it is connected via USB")
-            return None
-
-        # search for mount point
-        mount_output = subprocess.run(['mount'], capture_output=True, text=True)
-
-        ipod_mounts = []
-        for line in mount_output.stdout.split('\n'):
-            if any(keyword in line.lower() for keyword in ['ipod', 'apple']):
-                ipod_mounts.append(line)
-
-        if ipod_mounts:
-            for mount in ipod_mounts:
-                # parse mount point
-                match = re.search(r'on (.+?) type', mount)
-                if match:
-                    return match.group(1)
-
-        # also check /proc/mounts
-        try:
-            with open('/proc/mounts', 'r') as f:
-                for line in f:
-                    if 'ipod' in line.lower():
-                        parts = line.split()
-                        if len(parts) >= 2:
-                            return parts[1]
-        except Exception as e:
-            pass
-
-        return None
-
     
     @staticmethod
     def find_playback_log() -> Optional[str]:
@@ -97,7 +102,7 @@ class LogAnalyser:
             str: The location of the log file
         """
         # find ipod
-        ipod_location = LogAnalyser.find_ipod()
+        ipod_location = find_ipod()
         if not ipod_location:
             return None
         
@@ -321,15 +326,26 @@ class LogAnalyser:
     
     
     def batch_add_to_db(self, entry: dict, final_add: bool = False) -> bool:
-        """Adds the given entry to the MongoDB collection"""
+        """Adds the given entry to the database collection"""
         if entry and entry != {}:
             self.batch_entries.append(entry)
-        
+
         if len(self.batch_entries) == BATCH_SIZE or final_add:
             try:
-                result = self.song_collection.insert_many(self.batch_entries)
+                if self.db_type == 'mongo':
+                    result = self.song_collection.insert_many(self.batch_entries)
+                    print(result.inserted_ids)
+                else:
+                    # sqlite batch insert
+                    self.cursor.executemany('''
+                        INSERT OR IGNORE INTO songs (song, artist, album, genres)
+                        VALUES (?, ?, ?, ?)
+                    ''', [(e['song'], e['artist'], e['album'], e.get('genres', ''))
+                          for e in self.batch_entries])
+                    self.conn.commit()
+                    print(f"Inserted {self.cursor.rowcount} songs")
+
                 self.batch_entries.clear()
-                print(result.inserted_ids)
             except Exception as e:
                 print(f"Failed to batch add entries to db: {e}")
         
@@ -397,34 +413,49 @@ class LogAnalyser:
 
 
     def update_play_stats_in_db(self):
-        """Updates play statistics in MongoDB"""
+        """Updates play statistics in database"""
         # setup
         play_stats = self.calc_total_plays()
-        bulk_operations = []
         print(f"Updating play stats for {len(play_stats)} songs...")
 
-        for row in play_stats.iter_rows(named=True):
-            # replace with current stats from log
-            updated_stats = {
-                'total_plays': row['total_plays'],
-                'song_length_ms': row['song_length_ms'],
-                'total_elapsed_ms': row['total_elapsed_ms']
-            }
+        if self.db_type == 'mongo':
+            bulk_operations = []
+            for row in play_stats.iter_rows(named=True):
+                # replace with current stats from log
+                updated_stats = {
+                    'total_plays': row['total_plays'],
+                    'song_length_ms': row['song_length_ms'],
+                    'total_elapsed_ms': row['total_elapsed_ms']
+                }
 
-            # add to bulk operations
-            bulk_operations.append(
-                UpdateOne(
-                    {'song': row['song'], 'artist': row['artist']},
-                    {'$set': updated_stats}
+                # add to bulk operations
+                bulk_operations.append(
+                    UpdateOne(
+                        {'song': row['song'], 'artist': row['artist']},
+                        {'$set': updated_stats}
+                    )
                 )
-            )
 
-        # execute batch update
-        if bulk_operations:
-            result = self.song_collection.bulk_write(bulk_operations)
-            print(f"Play stats updated: {result.modified_count} documents modified")
+            # execute batch update
+            if bulk_operations:
+                result = self.song_collection.bulk_write(bulk_operations)
+                print(f"Play stats updated: {result.modified_count} documents modified")
+            else:
+                print("No play stats to update")
         else:
-            print("No play stats to update")
+            # sqlite update
+            for row in play_stats.iter_rows(named=True):
+                self.cursor.execute('''
+                    UPDATE songs
+                    SET total_plays = ?,
+                        song_length_ms = ?,
+                        total_elapsed_ms = ?
+                    WHERE song = ? AND artist = ?
+                ''', (row['total_plays'], row['song_length_ms'], row['total_elapsed_ms'],
+                      row['song'], row['artist']))
+
+            self.conn.commit()
+            print(f"Play stats updated: {self.cursor.rowcount} songs modified")
 
 
     def df_to_file(self, df: pl.DataFrame = None,
@@ -443,9 +474,30 @@ class LogAnalyser:
         
         
     def load_stats_from_db(self) -> pl.DataFrame:
-        """Loads song statistics from MongoDB into a polars DataFrame"""
-        # fetch all documents from mongo
-        all_docs = list(self.song_collection.find({}, projection={'_id': 0}))
+        """Loads song statistics from database into a polars DataFrame"""
+        if self.db_type == 'mongo':
+            # fetch all documents from mongo
+            all_docs = list(self.song_collection.find({}, projection={'_id': 0}))
+        else:
+            # fetch all from sqlite
+            self.cursor.execute('''
+                SELECT song, artist, album, genres, total_plays,
+                       song_length_ms, total_elapsed_ms
+                FROM songs
+            ''')
+            rows = self.cursor.fetchall()
+            all_docs = [
+                {
+                    'song': row[0],
+                    'artist': row[1],
+                    'album': row[2],
+                    'genres': row[3] or '',
+                    'total_plays': row[4] or 0,
+                    'song_length_ms': row[5] or 0,
+                    'total_elapsed_ms': row[6] or 0
+                }
+                for row in rows
+            ]
 
         if not all_docs:
             return pl.DataFrame()
@@ -456,45 +508,85 @@ class LogAnalyser:
     def merge_duplicate_genres(self) -> None:
         """Merges any duplicate genres (e.g. hip-hop vs hip hop) in the db.
         Fixes with a batch update if necessary."""
-        bulk_operations = []
 
-        # fetch all songs with genres
-        all_docs = self.song_collection.find({'genres': {'$exists': True, '$ne': ''}})
+        if self.db_type == 'mongo':
+            bulk_operations = []
 
-        for doc in all_docs:
-            genres = doc.get('genres', '')
-            if not genres:
-                continue
+            # fetch all songs with genres
+            all_docs = self.song_collection.find({'genres': {'$exists': True, '$ne': ''}})
 
-            # split, normalize, rejoin
-            genre_list = [g.strip() for g in genres.split(',')]
-            normalized_genres = [genre_mappings.get(g.lower(), g) for g in genre_list]
+            for doc in all_docs:
+                genres = doc.get('genres', '')
+                if not genres:
+                    continue
 
-            # remove duplicates
-            seen = set()
-            unique_genres = []
-            for g in normalized_genres:
-                if g.lower() not in seen:
-                    seen.add(g.lower())
-                    unique_genres.append(g)
+                # split, normalize, rejoin
+                genre_list = [g.strip() for g in genres.split(',')]
+                normalized_genres = [genre_mappings.get(g.lower(), g) for g in genre_list]
 
-            new_genre_str = ','.join(unique_genres)
+                # remove duplicates
+                seen = set()
+                unique_genres = []
+                for g in normalized_genres:
+                    if g.lower() not in seen:
+                        seen.add(g.lower())
+                        unique_genres.append(g)
 
-            # only update if genres changed
-            if new_genre_str != genres:
-                bulk_operations.append(
-                    UpdateOne(
-                        {'_id': doc['_id']},
-                        {'$set': {'genres': new_genre_str}}
+                new_genre_str = ','.join(unique_genres)
+
+                # only update if genres changed
+                if new_genre_str != genres:
+                    bulk_operations.append(
+                        UpdateOne(
+                            {'_id': doc['_id']},
+                            {'$set': {'genres': new_genre_str}}
+                        )
                     )
-                )
 
-        # batch update
-        if bulk_operations:
-            result = self.song_collection.bulk_write(bulk_operations)
-            print(f"Genre normalization: {result.modified_count} documents updated")
+            # batch update
+            if bulk_operations:
+                result = self.song_collection.bulk_write(bulk_operations)
+                print(f"Genre normalization: {result.modified_count} documents updated")
+            else:
+                print("No genre duplicates found")
         else:
-            print("No genre duplicates found")
+            # sqlite genre normalization
+            self.cursor.execute("SELECT song, artist, genres FROM songs WHERE genres IS NOT NULL AND genres != ''")
+            rows = self.cursor.fetchall()
+            updates = []
+
+            for row in rows:
+                song, artist, genres = row
+                if not genres:
+                    continue
+
+                # split, normalize, rejoin
+                genre_list = [g.strip() for g in genres.split(',')]
+                normalized_genres = [genre_mappings.get(g.lower(), g) for g in genre_list]
+
+                # remove duplicates
+                seen = set()
+                unique_genres = []
+                for g in normalized_genres:
+                    if g.lower() not in seen:
+                        seen.add(g.lower())
+                        unique_genres.append(g)
+
+                new_genre_str = ','.join(unique_genres)
+
+                # only update if genres changed
+                if new_genre_str != genres:
+                    updates.append((new_genre_str, song, artist))
+
+            # batch update
+            if updates:
+                self.cursor.executemany('''
+                    UPDATE songs SET genres = ? WHERE song = ? AND artist = ?
+                ''', updates)
+                self.conn.commit()
+                print(f"Genre normalization: {len(updates)} songs updated")
+            else:
+                print("No genre duplicates found")
 
 
     def find_top_genres(self, n: int = 3) -> List[str]:
@@ -595,7 +687,35 @@ class LogAnalyser:
         ).sort('total_plays', descending=True).head(n)
 
         # return album names (w/artist for context)
-        return [f"{row['album']} - {row['artist']}" for row in top_albums.iter_rows(named=True)]
+        return [(row["album"], row["artist"]) for row in top_albums.iter_rows(named=True)]
+       
+    
+    def find_top_songs(self, n: int = 3) -> List[tuple]:
+        """Finds the top n songs listened to based on
+        total_plays stats.
+
+        Args:
+            n (int, optional): The number of top songs to show. Defaults to 3.
+
+        Returns:
+            List[str]: [first, second, third, ..., N] top songs
+        """
+        # load stats from db
+        stats_df = self.load_stats_from_db()
+
+        if stats_df.is_empty():
+            return []
+
+        # filter out rows without total_plays
+        stats_df = stats_df.filter(pl.col('total_plays').is_not_null())
+
+        # aggregate by song (and artist in case of same-named songs)
+        top_songs = stats_df.group_by(['song', 'artist']).agg(
+            pl.col('total_plays').sum().alias('total_plays')
+        ).sort('total_plays', descending=True).head(n)
+
+        # return song names (w/artist for context)
+        return [(row['song'],row['artist']) for row in top_songs.iter_rows(named=True)]
     
     
     def find_most_listened_to(self) -> tuple:
@@ -641,18 +761,20 @@ class LogAnalyser:
         return total_minutes
     
     
-    def display_stats(self) -> dict:
+    def calc_all_stats(self) -> dict:
         """"""
         # calculations
         top_genres = self.find_top_genres()
-        top_artists = self.find_top_artists()
+        top_artists = self.find_top_artists(5)
         top_albums = self.find_top_albums()
+        top_songs = self.find_top_songs(5)
         
         # setup
         stats = {
             "top_genres": [],
             "top_artists": [],
             "top_albums": [],
+            "top_songs": [],
             "most_listened_song": self.find_most_listened_to(),
             "total_play_time_mins": self.calc_total_play_time()
         }
@@ -669,31 +791,45 @@ class LogAnalyser:
         for album in top_albums:
             stats["top_albums"].append({"album": album})
             
+        # format songs
+        for song in top_songs:
+            stats["top_songs"].append({"song": song})
+        
         print(json.dumps(stats, indent=4))
         return stats
-    
-    
+
+
+    def close(self):
+        """Close database connection (for SQLite)"""
+        if self.db_type == 'local' and hasattr(self, 'conn'):
+            self.conn.close()
+            print("Database connection closed")
+
+
     def run(self) -> None:
         """Runs the log analyser from start to finish"""
+        # find logs
         log_location = self.find_playback_log()
         if not log_location:
             print("Could not find the iPod. Make sure it is connected via USB")
             return
-        
+
         # read and analyse logs
         self.log_data = self.load_logs(log_location)
         self.log_df = self.logs_to_df()
         print(f"Loaded {len(self.log_df)} log entries")
-        
+
         # finish updating db
         self.batch_add_to_db({}, final_add=True)
         self.update_play_stats_in_db()
-        
-        # run stats
-        self.display_stats()
-        
 
-        
+        # run stats
+        self.stats = self.calc_all_stats()
+
+        # cleanup
+        self.close()
+
+
 if __name__ == "__main__":
-    analyser = LogAnalyser()
+    analyser = LogAnalyser(db_type='local')
     analyser.run()
