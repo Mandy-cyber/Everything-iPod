@@ -1,3 +1,5 @@
 polars
 python-dotenv
 requests
+pygobject
+pymongo
