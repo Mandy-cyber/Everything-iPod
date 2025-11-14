@@ -2,7 +2,6 @@ import os
 import re
 import glob
 import json
-import subprocess
 import sqlite3
 import polars as pl
 from dotenv import load_dotenv
@@ -12,7 +11,7 @@ from pymongo import MongoClient, UpdateOne
 from typing import Optional, List
 
 from constants import *
-from helpers import find_ipod
+from wrapped_helpers import find_ipod, fix_filenames_in_db
 
 load_dotenv()
 
@@ -763,7 +762,7 @@ class LogAnalyser:
     
     
     def calc_all_stats(self) -> dict:
-        """"""
+        """Calculates all the relevant iPod Wrapped Stats"""
         # calculations
         top_genres = self.find_top_genres()
         top_artists = self.find_top_artists(5)
@@ -772,29 +771,13 @@ class LogAnalyser:
         
         # setup
         stats = {
-            "top_genres": [],
-            "top_artists": [],
-            "top_albums": [],
-            "top_songs": [],
+            "top_genres": [{"genre": genre} for genre in top_genres],
+            "top_artists": [{"artist": artist} for artist in top_artists],
+            "top_albums": [{"album": album} for album in top_albums],
+            "top_songs": [{"song": song} for song in top_songs],
             "most_listened_song": self.find_most_listened_to(),
             "total_play_time_mins": self.calc_total_play_time()
         }
-        
-        # format genres
-        for genre in top_genres:
-            stats["top_genres"].append({"genre": genre})
-        
-        # format artists
-        for artist in top_artists:
-            stats["top_artists"].append({"artist": artist})
-        
-        # format albums
-        for album in top_albums:
-            stats["top_albums"].append({"album": album})
-            
-        # format songs
-        for song in top_songs:
-            stats["top_songs"].append({"song": song})
         
         print(json.dumps(stats, indent=4))
         return stats
@@ -823,6 +806,10 @@ class LogAnalyser:
         # finish updating db
         self.batch_add_to_db({}, final_add=True)
         self.update_play_stats_in_db()
+
+        # fix truncated album names
+        print("Fixing truncated album names in database...")
+        fix_filenames_in_db(db_type=self.db_type, db_path=self.db_path)
 
         # run stats
         self.stats = self.calc_all_stats()
