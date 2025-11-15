@@ -8,6 +8,7 @@ import sqlite3
 import math
 from typing import Optional, List
 from pymongo import MongoClient
+from datetime import datetime
 
 from .album_art_fixer import process_images, organize_music_files, clear_temp_directory
 
@@ -242,15 +243,128 @@ def fix_filenames_in_db(db_type: str = 'local', db_path: str = 'storage/ipod_wra
     return True
 
 
-def fix_and_store_album_art(album_art_storage: str) -> bool:
+def _get_max_last_updated(db_type: str, db_path: str) -> Optional[datetime]:
+    """Get the most recent last_updated timestamp from the database
+
+    Args:
+        db_type (str): Type of database ('mongo' or 'local')
+        db_path (str): Path to local db file
+
+    Returns:
+        Optional[datetime]: Most recent update time or None if not available
+    """
+    if db_type == 'mongo':
+        try:
+            client = MongoClient(os.getenv('MONGODB_URI'))
+            db = client.song_db
+            song_collection = db.songs
+
+            # find document with most recent last_updated
+            result = song_collection.find_one(
+                {'last_updated': {'$exists': True}},
+                sort=[('last_updated', -1)]
+            )
+            if result and 'last_updated' in result:
+                return result['last_updated']
+        except Exception:
+            pass
+    else:
+        # local sqlite
+        try:
+            conn = sqlite3.connect(db_path)
+            cursor = conn.cursor()
+
+            cursor.execute('SELECT MAX(last_updated) FROM songs WHERE last_updated IS NOT NULL')
+            result = cursor.fetchone()
+            conn.close()
+
+            if result and result[0]:
+                return datetime.fromisoformat(result[0])
+        except Exception:
+            pass
+
+    return None
+
+
+def _get_album_art_last_processed(album_art_storage: str) -> Optional[datetime]:
+    """Get the timestamp when album art was last processed
+
+    Args:
+        album_art_storage (str): Album art storage directory
+
+    Returns:
+        Optional[datetime]: Last processed time or None if never processed
+    """
+    cache_file = os.path.join(album_art_storage, '.last_processed')
+
+    if not os.path.exists(cache_file):
+        return None
+
+    try:
+        with open(cache_file, 'r') as f:
+            timestamp_str = f.read().strip()
+            return datetime.fromisoformat(timestamp_str)
+    except Exception:
+        return None
+
+
+def _set_album_art_last_processed(album_art_storage: str):
+    """Set the album art last processed timestamp to now
+
+    Args:
+        album_art_storage (str): Album art storage directory
+    """
+    cache_file = os.path.join(album_art_storage, '.last_processed')
+
+    try:
+        os.makedirs(album_art_storage, exist_ok=True)
+        with open(cache_file, 'w') as f:
+            f.write(datetime.now().isoformat())
+    except Exception as e:
+        print(f"Warning: could not update album art cache: {e}")
+
+
+def _should_process_album_art(album_art_storage: str, db_type: str, db_path: str) -> bool:
+    """Check if album art processing is needed based on db last_updated
+
+    Args:
+        album_art_storage (str): Album art storage directory
+        db_type (str): Type of database ('mongo' or 'local')
+        db_path (str): Path to local db file
+
+    Returns:
+        bool: True if processing is needed, False otherwise
+    """
+    # check when last processed
+    last_processed = _get_album_art_last_processed(album_art_storage)
+    if last_processed is None:
+        return True
+
+    # get most recent db update
+    db_last_updated = _get_max_last_updated(db_type, db_path)
+    if db_last_updated is None:
+        return True
+
+    return db_last_updated > last_processed
+
+
+def fix_and_store_album_art(album_art_storage: str, db_type: str = 'local', db_path: str = 'storage/ipod_wrapped.db', force: bool = False) -> bool:
     """Generates a cover.jpg for each album, and copies them locally
 
     Args:
         album_art_storage (str): Where to store the generated album art
+        db_type (str): Type of database ('mongo' or 'local')
+        db_path (str): Path to local db file
+        force (bool): Force reprocessing even if not needed
 
     Returns:
         bool: True if successful, false otherwise
     """
+    # check if processing is needed
+    if not force and not _should_process_album_art(album_art_storage, db_type, db_path):
+        print("Album art is up to date, skipping processing")
+        return True
+
     # locate "Music" dir
     music_dir = find_music_directory()
     if not music_dir:
@@ -310,6 +424,10 @@ def fix_and_store_album_art(album_art_storage: str) -> bool:
                 copied_count += 1
 
         print(f"Successfully copied {copied_count} album covers to {album_art_storage}")
+
+        # update cache timestamp
+        _set_album_art_last_processed(album_art_storage)
+
         return True
 
     except Exception as e:
@@ -422,7 +540,7 @@ def grab_all_metadata(db_type: str, db_path: str, album_art_dir: str) -> List[di
         conn.close()
 
     # get album art files
-    fix_and_store_album_art(album_art_dir)
+    fix_and_store_album_art(album_art_dir, db_type, db_path)
     available_art = {}
     for filename in os.listdir(album_art_dir):
         if filename.endswith('_cover.jpg'):

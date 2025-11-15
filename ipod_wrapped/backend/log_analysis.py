@@ -9,6 +9,7 @@ import requests
 from time import sleep
 from pymongo import MongoClient, UpdateOne
 from typing import Optional, List
+from datetime import datetime
 
 from .constants import *
 from .wrapped_helpers import find_ipod, fix_filenames_in_db
@@ -77,6 +78,7 @@ class LogAnalyser:
                 total_plays INTEGER DEFAULT 0,
                 song_length_ms INTEGER,
                 total_elapsed_ms INTEGER DEFAULT 0,
+                last_updated TEXT,
                 PRIMARY KEY (song, artist)
             )
         ''')
@@ -335,14 +337,19 @@ class LogAnalyser:
         if len(self.batch_entries) == BATCH_SIZE or final_add:
             try:
                 if self.db_type == 'mongo':
+                    # add last_updated timestamp to each entry
+                    now = datetime.now()
+                    for entry in self.batch_entries:
+                        entry['last_updated'] = now
                     result = self.song_collection.insert_many(self.batch_entries)
                     print(result.inserted_ids)
                 else:
                     # sqlite batch insert
+                    now = datetime.now().isoformat()
                     self.cursor.executemany('''
-                        INSERT OR IGNORE INTO songs (song, artist, album, genres)
-                        VALUES (?, ?, ?, ?)
-                    ''', [(e['song'], e['artist'], e['album'], e.get('genres', ''))
+                        INSERT OR IGNORE INTO songs (song, artist, album, genres, last_updated)
+                        VALUES (?, ?, ?, ?, ?)
+                    ''', [(e['song'], e['artist'], e['album'], e.get('genres', ''), now)
                           for e in self.batch_entries])
                     self.conn.commit()
                     print(f"Inserted {self.cursor.rowcount} songs")
@@ -422,12 +429,14 @@ class LogAnalyser:
 
         if self.db_type == 'mongo':
             bulk_operations = []
+            now = datetime.now()
             for row in play_stats.iter_rows(named=True):
                 # replace with current stats from log
                 updated_stats = {
                     'total_plays': row['total_plays'],
                     'song_length_ms': row['song_length_ms'],
-                    'total_elapsed_ms': row['total_elapsed_ms']
+                    'total_elapsed_ms': row['total_elapsed_ms'],
+                    'last_updated': now
                 }
 
                 # add to bulk operations
@@ -446,14 +455,16 @@ class LogAnalyser:
                 print("No play stats to update")
         else:
             # sqlite update
+            now = datetime.now().isoformat()
             for row in play_stats.iter_rows(named=True):
                 self.cursor.execute('''
                     UPDATE songs
                     SET total_plays = ?,
                         song_length_ms = ?,
-                        total_elapsed_ms = ?
+                        total_elapsed_ms = ?,
+                        last_updated = ?
                     WHERE song = ? AND artist = ?
-                ''', (row['total_plays'], row['song_length_ms'], row['total_elapsed_ms'],
+                ''', (row['total_plays'], row['song_length_ms'], row['total_elapsed_ms'], now,
                       row['song'], row['artist']))
 
             self.conn.commit()
