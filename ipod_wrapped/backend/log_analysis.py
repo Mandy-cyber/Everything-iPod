@@ -859,7 +859,10 @@ class LogAnalyser:
             # fix truncated album names
             print("Fixing truncated album names in database...")
             fix_filenames_in_db(db_type=self.db_type, db_path=self.db_path)
-
+            
+            # consolidate genre names
+            self.merge_duplicate_genres()
+            
             # run stats
             self.stats = self.calc_all_stats()
         except Exception as e:

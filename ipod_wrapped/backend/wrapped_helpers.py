@@ -883,14 +883,17 @@ def create_genre_mappings(db_type: str, db_path: str, album_art_dir: str,
         for key, song_info in songs_dict.items():
             song, artist = key
             song_genres = song_info["genres"].split(",")
-            song_info_copy = song_info.copy()
-            song_info_copy.pop("genres")
+            elapsed = song_info["total_elapsed_ms"]
+            plays = song_info["total_plays"]
+
             for g in song_genres:
                 g_lower = g.strip().lower() if g.strip() else "unknown"
                 if g_lower in temp_dict:
-                    elapsed, plays = song_info_copy["total_elapsed_ms"], song_info_copy["total_plays"]
-                    song_info_copy.pop("total_elapsed_ms")
-                    song_info_copy.pop("total_plays")
+                    song_info_copy = {
+                        'song': song_info['song'],
+                        'artist': song_info['artist'],
+                        'art_path': song_info['art_path']
+                    }
                     temp_dict[g_lower]["songs"].append(song_info_copy)
                     temp_dict[g_lower]["total_elapsed_ms"] += elapsed
                     temp_dict[g_lower]["total_plays"] += plays
@@ -986,14 +989,17 @@ def create_genre_mappings(db_type: str, db_path: str, album_art_dir: str,
         for key, song_info in songs_dict.items():
             song, artist = key
             song_genres = song_info["genres"].split(",")
-            song_info_copy = song_info.copy()
-            song_info_copy.pop("genres")
+            elapsed = song_info["total_elapsed_ms"]
+            plays = song_info["total_plays"]
+
             for g in song_genres:
                 g_lower = g.strip().lower() if g.strip() else "unknown"
                 if g_lower in temp_dict:
-                    elapsed, plays = song_info_copy["total_elapsed_ms"], song_info_copy["total_plays"]
-                    song_info_copy.pop("total_elapsed_ms")
-                    song_info_copy.pop("total_plays")
+                    song_info_copy = {
+                        'song': song_info['song'],
+                        'artist': song_info['artist'],
+                        'art_path': song_info['art_path']
+                    }
                     temp_dict[g_lower]["songs"].append(song_info_copy)
                     temp_dict[g_lower]["total_elapsed_ms"] += elapsed
                     temp_dict[g_lower]["total_plays"] += plays
