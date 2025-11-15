@@ -9,7 +9,7 @@ import math
 from typing import Optional, List
 from pymongo import MongoClient
 
-from album_art_fixer import process_images, organize_music_files, clear_temp_directory
+from .album_art_fixer import process_images, organize_music_files, clear_temp_directory
 
 
 def ms_to_mmss(milliseconds: int) -> str:

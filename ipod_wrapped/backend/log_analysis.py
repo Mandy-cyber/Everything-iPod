@@ -10,10 +10,12 @@ from time import sleep
 from pymongo import MongoClient, UpdateOne
 from typing import Optional, List
 
-from constants import *
-from wrapped_helpers import find_ipod, fix_filenames_in_db
+from .constants import *
+from .wrapped_helpers import find_ipod, fix_filenames_in_db
 
 load_dotenv()
+
+# TODO: add logic to check date/time so stats not repeated year after year. can then also add monthly stats
 
 class LogAnalyser:
 

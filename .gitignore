@@ -17,4 +17,4 @@ sample-files/album-art/
 playlist-maker/*
 guide-docs/
 helpers/
-app.py
+gtk_app4.py
