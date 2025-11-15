@@ -20,14 +20,17 @@ class GenresPage(Gtk.ScrolledWindow):
         self.album_art_dir = album_art_dir
 
         self.add_css_class('page-area')
+        self.add_css_class('genres-page')
         paned = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL)
-        
+
         # paned - right
         sw_right = Gtk.ScrolledWindow()
         sw_right.set_policy(Gtk.PolicyType.NEVER,Gtk.PolicyType.AUTOMATIC)
-        
+        sw_right.add_css_class('genre-breakdown-scrolled')
+
         self.right_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-        self.right_box.set_size_request(200, -1)        
+        self.right_box.set_size_request(215, -1)
+        self.right_box.add_css_class('genre-breakdown-pane')
         sw_right.set_child(self.right_box)
         
         # paned - left
@@ -50,10 +53,13 @@ class GenresPage(Gtk.ScrolledWindow):
         paned.set_start_child(sw_left)
         paned.set_end_child(sw_right)
         paned.set_position(400)
+        paned.set_resize_start_child(True)
+        paned.set_resize_end_child(False)
+        paned.set_shrink_start_child(False)
+        paned.set_shrink_end_child(False)
         
         self.set_child(paned)
         
-
     def _load_genre_tags(self) -> None:
         """Load and display genres from database"""
         # check if data exists in database

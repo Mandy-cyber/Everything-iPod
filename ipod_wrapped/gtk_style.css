@@ -36,8 +36,69 @@ windowcontrols button image {
 }
 
 /* GENRE */
+.genres-page {
+    margin: 0;
+}
+
+.genre-breakdown-scrolled {
+    margin: 0;
+    padding: 0;
+}
+
+.genre-breakdown-pane{
+    background-color: #1b1b1e;
+    margin: 0;
+    padding: 0;
+}
+
 .genre-tag {
-    
+    background-color: #2b2b30;
+}
+
+.genre-tag:hover {
+    background-color: #923a78;
+}
+
+.genre-header-box {
+    margin-top: 10px;
+    margin-bottom: 8px;
+}
+
+.genre-title-label {
+    font-weight: 500;
+    font-size: 16px;
+    margin-bottom: 2px;
+}
+
+.genre-stats-label {
+    margin: 0px 0px 2px -2px;
+    font-weight: 200;
+}
+
+.genre-info-icon {
+    min-height: 8px;
+    min-width: 8px;
+    padding: 0;
+    margin: 0;
+    -gtk-icon-size: 10px;
+}
+
+.genre-image {
+    margin-left: 10px;
+}
+
+.genre-song-row {
+    padding: 3px 0;
+}
+
+.genre-song-art {
+    margin-left: 10px;
+    margin-right: 3px;
+}
+
+.genre-song-text {
+    font-size: 9px;
+    font-weight: 300;
 }
 
 /* HEADER BAR & VIEW SWITCHER */

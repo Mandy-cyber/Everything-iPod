@@ -419,7 +419,7 @@ def _should_process_album_art(album_art_storage: str, db_type: str, db_path: str
     return db_last_updated > last_processed
 
 
-def find_album_art(album: str, album_art_storage: str) -> Optional[str]:
+def find_album_art(album: str, album_art_storage: str) -> str:
     """Finds the art associated with the given album. Logic from Claude.
 
     Args:
@@ -427,7 +427,7 @@ def find_album_art(album: str, album_art_storage: str) -> Optional[str]:
         album_art_storage (str): The location of album covers
 
     Returns:
-        Optional[str]: The location of the album's specific cover art, or None if not found
+        str: The location of the album's specific cover art, or path to missing_album_cover.jpg if not found
     """
     # build available art dictionary
     available_art = {}
@@ -454,7 +454,8 @@ def find_album_art(album: str, album_art_storage: str) -> Optional[str]:
         if album_base == file_base and album_base != album:
             return file_art_path
 
-    return None
+    # no art found, return missing cover placeholder
+    return os.path.join(album_art_storage, "missing_album_cover.jpg")
 
 
 def fix_and_store_album_art(album_art_storage: str, db_type: str = 'local', db_path: str = 'storage/ipod_wrapped.db', force: bool = False) -> bool:
@@ -574,7 +575,6 @@ def grab_all_metadata(db_type: str, db_path: str, album_art_dir: str,
                 ]
             }
     """
-    # TODO: change total elapsed and song length to return in ms
     # check for bad params
     if db_type != 'mongo' and db_type != 'local':
         return []
@@ -743,20 +743,18 @@ def grab_all_metadata(db_type: str, db_path: str, album_art_dir: str,
     # match metadata with album art
     results = []
     for album_key, album_data in albums_dict.items():
-        # find album art
+        # find album art (returns missing_album_cover.jpg if not found)
         album_name = album_data['album_name']
         album_artist = album_data['artist']
         art_path = find_album_art(album_name, album_art_dir)
 
-        # only include albums that have matching art
-        if art_path:
-            results.append({
-                'art_path': art_path,
-                'album_name': album_name,
-                'artist': album_artist,
-                'genres': album_data['genres'],
-                'songs': album_data['songs']
-            })
+        results.append({
+            'art_path': art_path,
+            'album_name': album_name,
+            'artist': album_artist,
+            'genres': album_data['genres'],
+            'songs': album_data['songs']
+        })
 
     return results
     
