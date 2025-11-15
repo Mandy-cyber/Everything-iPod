@@ -19,12 +19,12 @@ load_dotenv()
 
 class LogAnalyser:
 
-    def __init__(self, db_type: str = 'mongo', db_path: str = '../sample-files/ipod_wrapped.db'):
+    def __init__(self, db_type: str = 'mongo', db_path: str = 'storage/ipod_wrapped.db'):
         """Initialize LogAnalyser with chosen database type
 
         Args:
             db_type (str): Either 'mongo' or 'local'. Defaults to 'mongo'.
-            db_path (str): Path to local SQLite db file. Defaults to '../sample-files/ipod_wrapped.db'.
+            db_path (str): Path to local SQLite db file. Defaults to 'storage/ipod_wrapped.db'.
         """
         self.db_type = db_type
         self.db_path = db_path
@@ -461,14 +461,14 @@ class LogAnalyser:
 
 
     def df_to_file(self, df: pl.DataFrame = None,
-                   output_file: str = '../sample-files/ipod_log.csv') -> None:
+                   output_file: str = 'sample-files/ipod_log.csv') -> None:
         """Writes the given dataframe, or the log dataframe, to the given
         output file.
 
         Args:
             df (pl.DataFrame, optional): The dataframe to write. Defaults to None.
             output_file (str, optional): Where to write the df to.
-                                        Defaults to '../sample-files/ipod_log.csv'.
+                                        Defaults to 'sample-files/ipod_log.csv'.
         """
         if df is None:
             df = self.log_df
@@ -792,32 +792,38 @@ class LogAnalyser:
             print("Database connection closed")
 
 
-    def run(self) -> None:
+    def run(self) -> bool:
         """Runs the log analyser from start to finish"""
         # find logs
         log_location = self.find_playback_log()
         if not log_location:
             print("Could not find the iPod. Make sure it is connected via USB")
-            return
+            return {"error": "Could not find iPod. Make sure it is connected & mounted."}
 
-        # read and analyse logs
-        self.log_data = self.load_logs(log_location)
-        self.log_df = self.logs_to_df()
-        print(f"Loaded {len(self.log_df)} log entries")
+        try:
+            # read and analyse logs
+            self.log_data = self.load_logs(log_location)
+            self.log_df = self.logs_to_df()
+            print(f"Loaded {len(self.log_df)} log entries")
 
-        # finish updating db
-        self.batch_add_to_db({}, final_add=True)
-        self.update_play_stats_in_db()
+            # finish updating db
+            self.batch_add_to_db({}, final_add=True)
+            self.update_play_stats_in_db()
 
-        # fix truncated album names
-        print("Fixing truncated album names in database...")
-        fix_filenames_in_db(db_type=self.db_type, db_path=self.db_path)
+            # fix truncated album names
+            print("Fixing truncated album names in database...")
+            fix_filenames_in_db(db_type=self.db_type, db_path=self.db_path)
 
-        # run stats
-        self.stats = self.calc_all_stats()
+            # run stats
+            self.stats = self.calc_all_stats()
+        except Exception as e:
+            print(f"ERROR: {e}")
+            return {"error": "Something went wrong. Please try again later"}
 
         # cleanup
         self.close()
+        return {"success": "Successfully synced & analysed your listening history!"}
+
 
 
 if __name__ == "__main__":

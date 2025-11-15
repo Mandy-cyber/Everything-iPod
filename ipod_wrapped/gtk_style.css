@@ -5,6 +5,7 @@
 }
 
 label {
+    color: #D9D9CE;
 }
 
 /* CLOSE, MINIMIZE, MAXIMIZE */
@@ -37,7 +38,7 @@ windowcontrols button image {
 /* HEADER BAR & VIEW SWITCHER */
 headerbar {
     background-color: #1b1b1e;
-    color: white;
+    color: #D9D9CE;
     min-height: 16px;
     padding: 0;
 }
@@ -53,7 +54,7 @@ headerbar viewswitcher button {
 
 headerbar viewswitcher button:checked {
     background-color: #1f1f23;
-    color: white;
+    color: #D9D9CE;
 }
 
 headerbar viewswitcher button:hover {
@@ -70,8 +71,74 @@ headerbar viewswitcher label {
 }
 
 /* BOTTOM BAR */
-.bottom-bar {
+.bottom-bar-collapsed {
     background-color: #1b1b1e;
     min-height: 35px;
     border-top: 1px solid #2a2a2e;
+}
+
+.bottom-bar-expanded {
+    background-color: #1b1b1e;
+    margin-top: 20px;
+    border-top: 1px solid #2a2a2e;
+}
+
+.bottom-bar-expand-btn, .bottom-bar-collapse-btn {
+    background-color: #2a2a2e;
+    border-radius: 50%;
+    min-width: 16px;
+    min-height: 16px;
+    margin-top: -12px;
+    border: 2px solid #1b1b1e;
+}
+
+.bottom-bar-expand-btn {
+    
+}
+
+.bottom-bar-expand-btn:hover, .bottom-bar-collapse-btn:hover {
+    background-color: #923a78;
+}
+
+
+/* START WRAPPED */
+.start-wrapped-title {
+    font-weight: 500;
+    font-size: 18px;
+    margin-top: 50px;
+}
+
+.start-wrapped-subtitle {
+    font-weight: 300;
+    font-size: 14px;
+}
+
+.start-wrapped-explainer {
+    font-weight: 200;
+    font-size: 11px;
+    margin: 10px 100px 0px 100px;
+}
+
+.start-wrapped-btn {
+    margin-top: 40px;
+}
+
+/* BANNERS */
+.banner-error, .banner-success, .banner-info {
+
+}
+
+.banner-error {
+    background-color: rgba(192, 28, 40, 0.2);
+    border-left: 3px solid #c01c28;
+}
+
+.banner-success {
+    background-color: rgba(38, 162, 105, 0.2);
+    border-left: 3px solid #26a269;
+}
+
+.banner-info {
+    background-color: rgba(153, 193, 241, 0.2);
+    border-left: 3px solid #99c1f1;
 }

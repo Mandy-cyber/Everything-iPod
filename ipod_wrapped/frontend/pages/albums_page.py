@@ -1,18 +1,22 @@
 import gi
 gi.require_version('Gtk', '4.0')
-from gi.repository import Gtk
+from gi.repository import Gtk, GLib
 
-from backend import grab_all_metadata
+from backend import grab_all_metadata, has_data
 from ..widgets.album_button import create_album_button
 
 
 class AlbumsPage(Gtk.ScrolledWindow):
     """Page displaying album grid"""
 
-    def __init__(self, db_type: str, db_path: str, album_art_dir: str):
+    def __init__(self, db_type: str, db_path: str, album_art_dir: str, toggle_bottom_bar_callback=None):
         super().__init__()
 
         self.IMAGE_SIZE = 120
+        self.toggle_bottom_bar = toggle_bottom_bar_callback
+        self.db_type = db_type
+        self.db_path = db_path
+        self.album_art_dir = album_art_dir
 
         # setup scrollable window
         self.set_policy(
@@ -32,15 +36,37 @@ class AlbumsPage(Gtk.ScrolledWindow):
         self.flowbox.set_homogeneous(True)
         self.set_child(self.flowbox)
 
-        # load and create album buttons
-        albums = grab_all_metadata(
-            db_type=db_type,
-            db_path=db_path,
-            album_art_dir=album_art_dir
-        )
+        # load albums
+        self._load_albums()
 
-        for album in albums:
-            button = create_album_button(album, self.IMAGE_SIZE)
-            self.flowbox.append(button)
-            
-        #
+    def _load_albums(self):
+        """Load and display albums from database"""
+        # check if data exists in database
+        albums = []
+        if has_data(self.db_type, self.db_path):
+            albums = grab_all_metadata(
+                db_type=self.db_type,
+                db_path=self.db_path,
+                album_art_dir=self.album_art_dir
+            )
+
+        if len(albums) == 0 and self.toggle_bottom_bar:
+            # wait to toggle
+            GLib.idle_add(self.toggle_bottom_bar)
+        else:
+            # populate with album buttons
+            for album in albums:
+                button = create_album_button(album, self.IMAGE_SIZE)
+                self.flowbox.append(button)
+
+    def refresh(self):
+        """Refresh the albums page by reloading albums from database"""
+        # clear existing album buttons
+        while True:
+            child = self.flowbox.get_first_child()
+            if child is None:
+                break
+            self.flowbox.remove(child)
+
+        # reload albums
+        self._load_albums()

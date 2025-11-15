@@ -4,7 +4,6 @@ from gi.repository import Gtk, Gdk, Pango, GdkPixbuf
 import cairo
 import math
 
-
 def create_album_button(album_info: dict, image_size: int = 120) -> Gtk.Button:
     """Creates a button with Album Art, Name, and Artist.
 

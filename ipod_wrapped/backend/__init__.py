@@ -7,7 +7,8 @@ from .wrapped_helpers import (
     find_music_directory,
     fix_filenames_in_db,
     fix_and_store_album_art,
-    ms_to_mmss
+    ms_to_mmss,
+    has_data
 )
 from .album_art_fixer import process_images, organize_music_files, clear_temp_directory
 from .constants import *
@@ -23,4 +24,5 @@ __all__ = [
     'process_images',
     'organize_music_files',
     'clear_temp_directory',
+    'has_data'
 ]

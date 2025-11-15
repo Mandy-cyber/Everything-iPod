@@ -82,7 +82,7 @@ def find_music_directory() -> Optional[str]:
     ipod_location = find_ipod()
     if not ipod_location:
         return None
-    
+
     # look for Music directory
     full_pattern = os.path.join(ipod_location, '**', "Music")
     found_files = glob.glob(full_pattern, recursive=True)
@@ -91,7 +91,43 @@ def find_music_directory() -> Optional[str]:
     return found_files[0]
 
 
-def fix_filenames_in_db(db_type: str = 'local', db_path: str = '../sample-files/ipod_wrapped.db') -> bool:
+def has_data(db_type: str, db_path: str) -> bool:
+    """Check if database contains data
+
+    Args:
+        db_type (str): Type of database ('mongo' or 'local')
+        db_path (str): Path to the database file (for local db)
+
+    Returns:
+        bool: True if database has song data, False otherwise
+    """
+    if db_type == 'local':
+        # check if database exists
+        if not os.path.exists(db_path):
+            return False
+
+        try:
+            conn = sqlite3.connect(db_path)
+            cursor = conn.cursor()
+            cursor.execute('SELECT COUNT(*) FROM songs')
+            count = cursor.fetchone()[0]
+            conn.close()
+            return count > 0
+        except Exception:
+            return False
+    else:
+        # check mongo database
+        try:
+            client = MongoClient(os.getenv('MONGODB_URI'))
+            db = client.song_db
+            song_collection = db.songs
+            count = song_collection.count_documents({})
+            return count > 0
+        except Exception:
+            return False
+
+
+def fix_filenames_in_db(db_type: str = 'local', db_path: str = 'storage/ipod_wrapped.db') -> bool:
     """Fixes the album names saved in the mongo or local db to match
     the names found in the Music directory. This is because often the
     log file truncates or otherwise messes them up.
@@ -313,9 +349,6 @@ def grab_all_metadata(db_type: str, db_path: str, album_art_dir: str) -> List[di
 
     if db_type == 'local' and (not db_path or len(db_path) == 0):
         return []
-    
-    # ensure album art loaded
-    # fix_and_store_album_art(album_art_dir) -- TODO: move logic
 
     albums_dict = {}
 
@@ -389,6 +422,7 @@ def grab_all_metadata(db_type: str, db_path: str, album_art_dir: str) -> List[di
         conn.close()
 
     # get album art files
+    fix_and_store_album_art(album_art_dir)
     available_art = {}
     for filename in os.listdir(album_art_dir):
         if filename.endswith('_cover.jpg'):
@@ -436,7 +470,4 @@ def grab_all_metadata(db_type: str, db_path: str, album_art_dir: str) -> List[di
     print(json.dumps(results, indent=4))
     return results
     
-    
-if __name__ == "__main__":
-    grab_all_metadata("local", "../sample-files/ipod_wrapped.db", "../sample-files/album-art")
     

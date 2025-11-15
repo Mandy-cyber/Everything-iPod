@@ -4,10 +4,12 @@ gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
 from gi.repository import Gtk, Gdk, Adw
 from .pages import AlbumsPage, SongsPage, WrappedPage
+from .widgets.bottom_bar import create_bottom_bar
+from .widgets.banner import create_banner
 
 class MainWindow(Adw.ApplicationWindow):
     """Main application window with navigation"""
-    def __init__(self, app, db_type="local", db_path="../sample-files/ipod_wrapped.db", album_art_dir="../sample-files/album-art"):
+    def __init__(self, app, db_type="local", db_path="storage/ipod_wrapped.db", album_art_dir="storage/album-art"):
         super().__init__(application=app)
         
         # setup css
@@ -39,11 +41,11 @@ class MainWindow(Adw.ApplicationWindow):
         self.stack.set_hexpand(True)
         
         # add pages to stack
-        self.albums_page = AlbumsPage(db_type, db_path, album_art_dir)
+        self.albums_page = AlbumsPage(db_type, db_path, album_art_dir, self.toggle_bottom_bar)
         self.songs_page = SongsPage()
         self.wrapped_page = WrappedPage()
         
-        # Replace these lines:
+        # page titles w/icons
         self.stack.add_titled_with_icon(self.albums_page, "albums", "Albums", "media-optical-symbolic")
         self.stack.add_titled_with_icon(self.songs_page, "songs", "Songs", "audio-x-generic-symbolic")
         self.stack.add_titled_with_icon(self.wrapped_page, "wrapped", "Wrapped", "emblem-favorite-symbolic")
@@ -60,30 +62,62 @@ class MainWindow(Adw.ApplicationWindow):
         
         # add stack to main box
         main_box.append(self.stack)
-        
+
+        # create banner placeholders
+        self.error_banner = create_banner("", "error")
+        self.success_banner = create_banner("", "success")
+
         # create bottom bar
-        self.bottom_bar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
-        self.bottom_bar.set_hexpand(True)
-        self.bottom_bar.add_css_class('bottom-bar')
-        main_box.append(self.bottom_bar)
-        
-        # Track visibility state
-        self.bottom_bar_visible = True
-    
+        self.bottom_bar_container = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.bottom_bar_container.set_hexpand(True)
+        self.collapsed_bar, self.expanded_bar = create_bottom_bar(
+            self.toggle_bottom_bar,
+            self.error_banner,
+            self.success_banner,
+            self.refresh_all_pages
+        )
+        self.bottom_bar_container.append(self.collapsed_bar)
+        self.bottom_bar_container.append(self.expanded_bar)
+
+        self.bottom_bar_expanded = False
+
+        # add bar to main box
+        main_box.append(self.bottom_bar_container)
+
+        # place banners (flush with bottom of window)
+        main_box.append(self.error_banner)
+        main_box.append(self.success_banner)
+
+    def refresh_all_pages(self):
+        """Refresh all pages after data has been updated"""
+        # refresh albums page
+        if hasattr(self.albums_page, 'refresh'):
+            self.albums_page.refresh()
+
+        # refresh songs page
+        if hasattr(self.songs_page, 'refresh'):
+            self.songs_page.refresh()
+
+        # refresh wrapped page
+        if hasattr(self.wrapped_page, 'refresh'):
+            self.wrapped_page.refresh()
+
     def toggle_bottom_bar(self):
-        """Toggle bottom bar visibility"""
-        self.bottom_bar_visible = not self.bottom_bar_visible
-        self.bottom_bar.set_visible(self.bottom_bar_visible)
-    
-    def show_bottom_bar(self):
-        """Show the bottom bar"""
-        self.bottom_bar_visible = True
-        self.bottom_bar.set_visible(True)
-    
-    def hide_bottom_bar(self):
-        """Hide the bottom bar"""
-        self.bottom_bar_visible = False
-        self.bottom_bar.set_visible(False)
+        """Toggle between collapsed and expanded bottom bar"""
+        self.bottom_bar_expanded = not self.bottom_bar_expanded
+
+        if self.bottom_bar_expanded:
+            # hide mini bar, show full view
+            self.stack.set_visible(False)
+            self.collapsed_bar.set_visible(False)
+            self.expanded_bar.set_visible(True)
+            self.expanded_bar.set_vexpand(True)
+        else:            
+            # show mini bar, hide full view
+            self.stack.set_visible(True)
+            self.collapsed_bar.set_visible(True)
+            self.expanded_bar.set_visible(False)
+            self.expanded_bar.set_vexpand(False)
 
 
 class iPodWrappedApp(Adw.Application):

@@ -11,7 +11,7 @@ scratch*
 .vscode/
 *.sh
 total_plays.csv
-sample-files/album-art/
+album-art/
 
 # extremely rough, still working on
 playlist-maker/*
