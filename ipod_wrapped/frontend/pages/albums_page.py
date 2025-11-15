@@ -12,6 +12,7 @@ class AlbumsPage(Gtk.ScrolledWindow):
     def __init__(self, db_type: str, db_path: str, album_art_dir: str, toggle_bottom_bar_callback=None):
         super().__init__()
 
+        # setup
         self.IMAGE_SIZE = 120
         self.toggle_bottom_bar = toggle_bottom_bar_callback
         self.db_type = db_type
@@ -54,13 +55,14 @@ class AlbumsPage(Gtk.ScrolledWindow):
             # wait to toggle
             GLib.idle_add(self.toggle_bottom_bar)
         else:
+            self.albums = albums
             # populate with album buttons
             for album in albums:
                 button = create_album_button(album, self.IMAGE_SIZE)
                 self.flowbox.append(button)
 
     def refresh(self):
-        """Refresh the albums page by reloading albums from database"""
+        """Refresh the page by reloading albums from database"""
         # clear existing album buttons
         while True:
             child = self.flowbox.get_first_child()

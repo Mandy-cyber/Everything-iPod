@@ -19,7 +19,7 @@ def create_sync_box_widgets(error_banner: Adw.Banner, success_banner: Adw.Banner
         list: A list of the widgets.
     """
     # text
-    title = Gtk.Label(label="Start Wrapped")
+    title = Gtk.Label(label="iPod Wrapped")
     title.add_css_class('start-wrapped-title')
 
     subtitle = Gtk.Label(label="Sync your Listening History")
@@ -29,11 +29,12 @@ def create_sync_box_widgets(error_banner: Adw.Banner, success_banner: Adw.Banner
     explainer.set_wrap(True)
     explainer.set_max_width_chars(50)
     explainer.add_css_class('start-wrapped-explainer')
-
+    
     # spinner
     spinner = Gtk.Spinner()
     spinner.set_halign(Gtk.Align.CENTER)
     spinner.set_visible(False)
+    spinner.add_css_class('start-wrapped-spinner')
 
     # start button box
     box = Gtk.Box(spacing=6)
@@ -79,9 +80,8 @@ def start_wrapped(button: Gtk.Button, spinner: Gtk.Spinner,
         analyser = LogAnalyser("local")
         result = analyser.run()
         
-
         # update UI on main thread
-        GLib.idle_add(analysis_complete, result, analyser, button, spinner,
+        GLib.idle_add(analysis_complete, result, button, spinner,
                      error_banner, success_banner, refresh_callback)
 
     # start analyser in background thread
@@ -89,14 +89,13 @@ def start_wrapped(button: Gtk.Button, spinner: Gtk.Spinner,
     thread.daemon = True
     thread.start()
 
-def analysis_complete(result: dict, analyser: LogAnalyser, button: Gtk.Button,
+def analysis_complete(result: dict, button: Gtk.Button,
                      spinner: Gtk.Spinner, error_banner: Adw.Banner,
                      success_banner: Adw.Banner, refresh_callback) -> bool:
     """Called when analysis is complete to update UI
 
     Args:
         result (dict): Result from analyser.run()
-        analyser (LogAnalyser): The analyser instance
         button (Gtk.Button): The start button to re-enable
         spinner (Gtk.Spinner): The spinner to hide
         error_banner (Adw.Banner): Banner for error messages
@@ -118,7 +117,5 @@ def analysis_complete(result: dict, analyser: LogAnalyser, button: Gtk.Button,
         # refresh all pages to show new data
         if refresh_callback:
             refresh_callback()
-        # TODO: figure out how to send stats to wrapped page. Maybe store locally or smth for easy loading
-        # stats = analyser.stats
 
     return False
