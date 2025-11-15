@@ -129,7 +129,7 @@ def has_data(db_type: str, db_path: str) -> bool:
 
 
 def fix_filenames_in_db(db_type: str = 'local', db_path: str = 'storage/ipod_wrapped.db') -> bool:
-    """Fixes the album names saved in the mongo or local db to match
+    """Fixes the album and song names saved in the mongo or local db to match
     the names found in the Music directory. This is because often the
     log file truncates or otherwise messes them up.
 
@@ -146,8 +146,9 @@ def fix_filenames_in_db(db_type: str = 'local', db_path: str = 'storage/ipod_wra
         print("Could not find Music directory on iPod")
         return False
 
-    # get all album folders from Music directory
+    # scan music directory for actual album and song names
     actual_albums = {}  # {artist: {truncated_album: full_album}}
+    actual_songs = {}   # {(artist, album): {truncated_song: full_song}}
 
     for artist_dir in os.listdir(music_dir):
         artist_path = os.path.join(music_dir, artist_dir)
@@ -161,13 +162,38 @@ def fix_filenames_in_db(db_type: str = 'local', db_path: str = 'storage/ipod_wra
             if not os.path.isdir(album_path):
                 continue
 
-            # store both full name and potential truncated versions
+            # store album name mappings
             actual_albums[artist_dir][album_dir] = album_dir
-
-            # also store truncated version (first 40 chars) as key
             if len(album_dir) > 40:
                 truncated = album_dir[:40]
                 actual_albums[artist_dir][truncated] = album_dir
+
+            # scan songs in this album
+            song_key = (artist_dir, album_dir)
+            actual_songs[song_key] = {}
+
+            for song_file in os.listdir(album_path):
+                song_path = os.path.join(album_path, song_file)
+                if not os.path.isfile(song_path):
+                    continue
+
+                # remove extension and track number to get song name
+                song_name = song_file
+                for ext in ['.mp3', '.flac', '.ogg', '.m4a', '.wav']:
+                    if song_name.lower().endswith(ext):
+                        song_name = song_name[:-len(ext)]
+                        break
+
+                # remove track number prefix (e.g., "01. " or "1 ")
+                parts = song_name.split('.', 1)
+                if len(parts) == 2 and parts[0].strip().isdigit():
+                    song_name = parts[1].strip()
+
+                # store song name mappings
+                actual_songs[song_key][song_name] = song_name
+                if len(song_name) > 40:
+                    truncated_song = song_name[:40]
+                    actual_songs[song_key][truncated_song] = song_name
 
     # fix database entries
     if db_type == 'mongo':
@@ -175,70 +201,111 @@ def fix_filenames_in_db(db_type: str = 'local', db_path: str = 'storage/ipod_wra
         db = client.song_db
         song_collection = db.songs
 
-        # get all unique album/artist pairs
-        pipeline = [
-            {'$group': {'_id': {'album': '$album', 'artist': '$artist'}}}
-        ]
+        album_updates = []
+        song_updates = []
 
-        updates = []
-        for doc in song_collection.aggregate(pipeline):
-            album = doc['_id']['album']
-            artist = doc['_id']['artist']
+        # get all songs
+        all_songs = song_collection.find({})
 
-            # check if this artist exists and if album needs fixing
-            if artist in actual_albums:
-                if album in actual_albums[artist]:
-                    full_album = actual_albums[artist][album]
+        for doc in all_songs:
+            song = doc.get('song')
+            album = doc.get('album')
+            artist = doc.get('artist')
 
-                    # only update if truncated
-                    if full_album != album:
-                        updates.append({
-                            'filter': {'album': album, 'artist': artist},
-                            'update': {'$set': {'album': full_album}}
-                        })
+            if not all([song, album, artist]):
+                continue
 
-        # perform updates
-        if updates:
-            from pymongo import UpdateMany
-            for update in updates:
-                song_collection.update_many(update['filter'], update['update'])
-            print(f"Fixed {len(updates)} truncated album names in MongoDB")
+            update_fields = {}
+
+            # check if album needs fixing
+            if artist in actual_albums and album in actual_albums[artist]:
+                full_album = actual_albums[artist][album]
+                if full_album != album:
+                    update_fields['album'] = full_album
+
+            # check if song needs fixing (using original or fixed album)
+            album_to_check = update_fields.get('album', album)
+            song_key = (artist, album_to_check)
+            if song_key in actual_songs and song in actual_songs[song_key]:
+                full_song = actual_songs[song_key][song]
+                if full_song != song:
+                    update_fields['song'] = full_song
+
+            # perform update if needed
+            if update_fields:
+                song_collection.update_one(
+                    {'_id': doc['_id']},
+                    {'$set': update_fields}
+                )
+                if 'album' in update_fields:
+                    album_updates.append(update_fields['album'])
+                if 'song' in update_fields:
+                    song_updates.append(update_fields['song'])
+
+        # print results
+        if album_updates or song_updates:
+            print(f"Fixed {len(album_updates)} album names and {len(song_updates)} song names in MongoDB")
         else:
-            print("No truncated album names found in MongoDB")
+            print("No truncated names found in MongoDB")
 
-    else:  
+    else:
         # local sqlite
         conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
 
-        # get all unique album/artist pairs
-        cursor.execute('SELECT DISTINCT album, artist FROM songs WHERE album IS NOT NULL AND artist IS NOT NULL')
+        album_updates = []
+        song_updates = []
 
-        updates = []
+        # get all songs
+        cursor.execute('SELECT song, artist, album FROM songs WHERE song IS NOT NULL AND artist IS NOT NULL')
+
         for row in cursor.fetchall():
-            album, artist = row
+            song, artist, album = row
 
-            # check if this artist exists and if album needs fixing
-            if artist in actual_albums:
-                if album in actual_albums[artist]:
-                    full_album = actual_albums[artist][album]
+            update_fields = {}
+            where_clause = []
+            params = []
 
-                    # only update if truncated
-                    if full_album != album:
-                        updates.append((full_album, album, artist))
+            # check if album needs fixing
+            if artist in actual_albums and album in actual_albums[artist]:
+                full_album = actual_albums[artist][album]
+                if full_album != album:
+                    update_fields['album'] = full_album
 
-        # perform updates
-        if updates:
-            cursor.executemany(
-                'UPDATE songs SET album = ? WHERE album = ? AND artist = ?',
-                updates
-            )
-            conn.commit()
-            print(f"Fixed {len(updates)} truncated album names in local database")
-        else:
-            print("No truncated album names found in local database")
+            # check if song needs fixing (using original or fixed album)
+            album_to_check = update_fields.get('album', album)
+            song_key = (artist, album_to_check)
+            if song_key in actual_songs and song in actual_songs[song_key]:
+                full_song = actual_songs[song_key][song]
+                if full_song != song:
+                    update_fields['song'] = full_song
 
+            # perform update if needed
+            if update_fields:
+                set_clause = ', '.join([f"{k} = ?" for k in update_fields.keys()])
+                params = list(update_fields.values())
+
+                # add where clause params
+                params.extend([song, artist, album])
+
+                cursor.execute(
+                    f'UPDATE songs SET {set_clause} WHERE song = ? AND artist = ? AND album = ?',
+                    params
+                )
+
+                if 'album' in update_fields:
+                    album_updates.append(update_fields['album'])
+                if 'song' in update_fields:
+                    song_updates.append(update_fields['song'])
+
+        conn.commit()
         conn.close()
+
+        # print results
+        if album_updates or song_updates:
+            print(f"Fixed {len(album_updates)} album names and {len(song_updates)} song names in local database")
+        else:
+            print("No truncated names found in local database")
 
     return True
 
@@ -435,13 +502,17 @@ def fix_and_store_album_art(album_art_storage: str, db_type: str = 'local', db_p
         return False
     
     
-def grab_all_metadata(db_type: str, db_path: str, album_art_dir: str) -> List[dict]:
+def grab_all_metadata(db_type: str, db_path: str, album_art_dir: str,
+                      start_date: Optional[datetime] = None,
+                      end_date: Optional[datetime] = None) -> List[dict]:
     """Grabs all metadata about all albums stored in the db
 
     Args:
         db_type (str): The type of db ('mongo' or 'local')
         db_path (str): The location of the db if 'local'
         album_art_dir (str): The directory where album art is stored
+        start_date (Optional[datetime]): Filter plays from this date onwards
+        end_date (Optional[datetime]): Filter plays up to this date
 
     Returns:
         List[dict]: Each dict contains:
@@ -468,73 +539,157 @@ def grab_all_metadata(db_type: str, db_path: str, album_art_dir: str) -> List[di
     if db_type == 'local' and (not db_path or len(db_path) == 0):
         return []
 
-    albums_dict = {}
+    # fix truncated album names before fetching metadata
+    fix_filenames_in_db(db_type=db_type, db_path=db_path)
 
-    # load song data from mongo
+    albums_dict = {}
+    songs_metadata = {}  # {(song, artist): {album, genres, song_length_ms}}
+
     if db_type == 'mongo':
         client = MongoClient(os.getenv('MONGODB_URI'))
         db = client.song_db
         song_collection = db.songs
+        plays_collection = db.plays
 
-        # get all songs grouped by album
+        # get song metadata
         all_songs = song_collection.find(
             {'album': {'$ne': None}, 'artist': {'$ne': None}},
-            projection={'_id': 0, 'song': 1, 'album': 1, 'artist': 1, 'genres': 1,
-                       'song_length_ms': 1, 'total_elapsed_ms': 1, 'total_plays': 1}
+            projection={'_id': 0, 'song': 1, 'album': 1, 'artist': 1,
+                       'genres': 1, 'song_length_ms': 1}
         )
 
-        # build result
         for song_doc in all_songs:
-            album_key = (song_doc['album'], song_doc['artist'])
+            song_key = (song_doc['song'], song_doc['artist'])
+            songs_metadata[song_key] = {
+                'album': song_doc['album'],
+                'artist': song_doc['artist'],
+                'genres': song_doc.get('genres', ''),
+                'song_length_ms': song_doc.get('song_length_ms', 0) or 0
+            }
+
+        # build date filter for plays
+        plays_filter = {}
+        if start_date or end_date:
+            plays_filter['timestamp'] = {}
+            if start_date:
+                plays_filter['timestamp']['$gte'] = start_date
+            if end_date:
+                plays_filter['timestamp']['$lte'] = end_date
+
+        # aggregate play stats
+        pipeline = [
+            {'$match': plays_filter} if plays_filter else {'$match': {}},
+            {'$group': {
+                '_id': {'song': '$song', 'artist': '$artist'},
+                'total_plays': {'$sum': 1},
+                'total_elapsed_ms': {'$sum': '$elapsed_ms'}
+            }}
+        ]
+
+        play_stats = list(plays_collection.aggregate(pipeline))
+
+        # combine metadata with play stats
+        for stat in play_stats:
+            song = stat['_id']['song']
+            artist = stat['_id']['artist']
+            song_key = (song, artist)
+
+            if song_key not in songs_metadata:
+                continue
+
+            metadata = songs_metadata[song_key]
+            album_key = (metadata['album'], artist)
+
             if album_key not in albums_dict:
                 albums_dict[album_key] = {
-                    'album_name': song_doc['album'],
-                    'artist': song_doc['artist'],
-                    'genres': song_doc.get('genres', ''),
+                    'album_name': metadata['album'],
+                    'artist': artist,
+                    'genres': metadata['genres'],
                     'songs': []
                 }
 
             albums_dict[album_key]['songs'].append({
-                'song': song_doc.get('song', ''),
-                'song_length': ms_to_mmss(song_doc.get('song_length_ms', 0) or 0),
-                'total_elapsed': ms_to_mmss(song_doc.get('total_elapsed_ms', 0) or 0),
-                'total_plays': song_doc.get('total_plays', 0) or 0
+                'song': song,
+                'song_length': ms_to_mmss(metadata['song_length_ms']),
+                'total_elapsed': ms_to_mmss(stat['total_elapsed_ms']),
+                'total_plays': stat['total_plays']
             })
 
-    # load song data from local
     else:
+        # local sqlite
         conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
 
+        # get song metadata
         cursor.execute('''
-            SELECT
-                album,
-                artist,
-                song,
-                genres,
-                song_length_ms,
-                total_elapsed_ms,
-                total_plays
+            SELECT song, artist, album, genres, song_length_ms
             FROM songs
             WHERE album IS NOT NULL AND artist IS NOT NULL
-            ORDER BY album, artist
         ''')
 
         for row in cursor.fetchall():
-            album_key = (row[0], row[1])
+            song_key = (row[0], row[1])
+            songs_metadata[song_key] = {
+                'album': row[2],
+                'artist': row[1],
+                'genres': row[3] or '',
+                'song_length_ms': row[4] or 0
+            }
+
+        # build date filter for plays
+        date_filter = ''
+        params = []
+        if start_date or end_date:
+            conditions = []
+            if start_date:
+                conditions.append('timestamp >= ?')
+                params.append(start_date.isoformat())
+            if end_date:
+                conditions.append('timestamp <= ?')
+                params.append(end_date.isoformat())
+            date_filter = 'WHERE ' + ' AND '.join(conditions)
+
+        # aggregate play stats from plays table
+        query = f'''
+            SELECT
+                song,
+                artist,
+                COUNT(*) as total_plays,
+                SUM(elapsed_ms) as total_elapsed_ms
+            FROM plays
+            {date_filter}
+            GROUP BY song, artist
+        '''
+
+        cursor.execute(query, params)
+
+        # iter through songs
+        for row in cursor.fetchall():
+            song = row[0]
+            artist = row[1]
+            song_key = (song, artist)
+
+            if song_key not in songs_metadata:
+                continue
+
+            metadata = songs_metadata[song_key]
+            album_key = (metadata['album'], artist)
+
             if album_key not in albums_dict:
+                # format metadata
                 albums_dict[album_key] = {
-                    'album_name': row[0],
-                    'artist': row[1],
-                    'genres': row[3] or '',
+                    'album_name': metadata['album'],
+                    'artist': artist,
+                    'genres': metadata['genres'],
                     'songs': []
                 }
 
+            # add metadata to songs
             albums_dict[album_key]['songs'].append({
-                'song': row[2],
-                'song_length': ms_to_mmss(row[4] or 0),
-                'total_elapsed': ms_to_mmss(row[5] or 0),
-                'total_plays': row[6] or 0
+                'song': song,
+                'song_length': ms_to_mmss(metadata['song_length_ms']),
+                'total_elapsed': ms_to_mmss(row[3]),
+                'total_plays': row[2]
             })
 
         conn.close()
@@ -585,7 +740,6 @@ def grab_all_metadata(db_type: str, db_path: str, album_art_dir: str) -> List[di
                 'songs': album_data['songs']
             })
 
-    print(json.dumps(results, indent=4))
     return results
     
     

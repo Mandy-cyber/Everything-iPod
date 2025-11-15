@@ -13,6 +13,11 @@ from datetime import datetime
 
 from .constants import *
 from .wrapped_helpers import find_ipod, fix_filenames_in_db
+from .schema import (
+    SQLITE_SONGS_TABLE, SQLITE_PLAYS_TABLE,
+    SQLITE_PLAYS_TIMESTAMP_INDEX, SQLITE_PLAYS_SONG_ARTIST_INDEX,
+    MONGO_SONGS_COLLECTION, MONGO_PLAYS_COLLECTION, MONGO_PLAYS_INDEXES
+)
 
 load_dotenv()
 
@@ -60,7 +65,12 @@ class LogAnalyser:
         """Setup MongoDB connection"""
         client = MongoClient(os.getenv('MONGODB_URI'))
         db = client.song_db
-        self.song_collection = db.songs
+        self.song_collection = db[MONGO_SONGS_COLLECTION]
+        self.plays_collection = db[MONGO_PLAYS_COLLECTION]
+
+        # create indexes on plays collection
+        self.plays_collection.create_index(MONGO_PLAYS_INDEXES[0])
+        self.plays_collection.create_index(MONGO_PLAYS_INDEXES[1])
 
 
     def _setup_local_db(self):
@@ -68,20 +78,12 @@ class LogAnalyser:
         self.conn = sqlite3.connect(self.db_path)
         self.cursor = self.conn.cursor()
 
-        # create table if not exists
-        self.cursor.execute('''
-            CREATE TABLE IF NOT EXISTS songs (
-                song TEXT NOT NULL,
-                artist TEXT NOT NULL,
-                album TEXT NOT NULL,
-                genres TEXT,
-                total_plays INTEGER DEFAULT 0,
-                song_length_ms INTEGER,
-                total_elapsed_ms INTEGER DEFAULT 0,
-                last_updated TEXT,
-                PRIMARY KEY (song, artist)
-            )
-        ''')
+        # create tables and indexes from schema
+        self.cursor.execute(SQLITE_SONGS_TABLE)
+        self.cursor.execute(SQLITE_PLAYS_TABLE)
+        self.cursor.execute(SQLITE_PLAYS_TIMESTAMP_INDEX)
+        self.cursor.execute(SQLITE_PLAYS_SONG_ARTIST_INDEX)
+
         self.conn.commit()
 
 
@@ -301,17 +303,28 @@ class LogAnalyser:
                         genres = self.find_album_genres((artist, album))
                         self.genre_data[album_key] = genres
 
+                    # extract data from log entry
+                    timestamp = int(match.group(1))
+                    elapsed_ms = int(match.group(2))
+                    length_ms = int(match.group(3))
+
                     # add song to database if not already seen
                     song_key = f"{song}:{artist}"
                     if song_key not in self.seen_songs:
-                        self.batch_add_to_db({"song": song, "album": album, "artist": artist, "genres": genres})
+                        self.batch_add_to_db({
+                            "song": song,
+                            "album": album,
+                            "artist": artist,
+                            "genres": genres,
+                            "song_length_ms": length_ms
+                        })
                         self.seen_songs.add(song_key)
 
-                    # create full entry for calculations
+                    # create full entry for play events
                     entries.append({
-                        'timestamp': int(match.group(1)),
-                        'elapsed_ms': int(match.group(2)),
-                        'length_ms': int(match.group(3)),
+                        'timestamp': timestamp,
+                        'elapsed_ms': elapsed_ms,
+                        'length_ms': length_ms,
                         'file_path': str(match.group(4)),
                         'album': album,
                         'genres': genres,
@@ -330,7 +343,7 @@ class LogAnalyser:
     
     
     def batch_add_to_db(self, entry: dict, final_add: bool = False) -> bool:
-        """Adds the given entry to the database collection"""
+        """Adds song metadata to the songs table/collection"""
         if entry and entry != {}:
             self.batch_entries.append(entry)
 
@@ -342,21 +355,73 @@ class LogAnalyser:
                     for entry in self.batch_entries:
                         entry['last_updated'] = now
                     result = self.song_collection.insert_many(self.batch_entries)
-                    print(result.inserted_ids)
+                    print(f"Inserted {len(result.inserted_ids)} songs to MongoDB")
                 else:
                     # sqlite batch insert
                     now = datetime.now().isoformat()
                     self.cursor.executemany('''
-                        INSERT OR IGNORE INTO songs (song, artist, album, genres, last_updated)
-                        VALUES (?, ?, ?, ?, ?)
-                    ''', [(e['song'], e['artist'], e['album'], e.get('genres', ''), now)
+                        INSERT OR IGNORE INTO songs (song, artist, album, genres, song_length_ms, last_updated)
+                        VALUES (?, ?, ?, ?, ?, ?)
+                    ''', [(e['song'], e['artist'], e['album'], e.get('genres', ''),
+                           e.get('song_length_ms'), now)
                           for e in self.batch_entries])
                     self.conn.commit()
-                    print(f"Inserted {self.cursor.rowcount} songs")
+                    print(f"Inserted {self.cursor.rowcount} songs to SQLite")
 
                 self.batch_entries.clear()
             except Exception as e:
-                print(f"Failed to batch add entries to db: {e}")
+                print(f"Failed to batch add song metadata: {e}")
+
+
+    def add_plays_from_dataframe(self, df: pl.DataFrame):
+        """Insert individual play events from the log dataframe into plays table/collection
+
+        Args:
+            df (pl.DataFrame): Dataframe containing parsed log entries with columns:
+                              timestamp, elapsed_ms, song, artist
+        """
+        if df.is_empty():
+            print("No plays to insert")
+            return
+
+        print(f"Inserting {len(df)} play events...")
+
+        try:
+            if self.db_type == 'mongo':
+                # convert dataframe to list of dicts
+                plays_data = []
+                for row in df.iter_rows(named=True):
+                    plays_data.append({
+                        'song': row['song'],
+                        'artist': row['artist'],
+                        'timestamp': datetime.fromtimestamp(row['timestamp']),
+                        'elapsed_ms': row['elapsed_ms']
+                    })
+
+                # batch insert all plays
+                if plays_data:
+                    result = self.plays_collection.insert_many(plays_data)
+                    print(f"Inserted {len(result.inserted_ids)} plays to MongoDB")
+            else:
+                # sqlite batch insert
+                plays_data = []
+                for row in df.iter_rows(named=True):
+                    plays_data.append((
+                        row['song'],
+                        row['artist'],
+                        datetime.fromtimestamp(row['timestamp']).isoformat(),
+                        row['elapsed_ms']
+                    ))
+
+                self.cursor.executemany('''
+                    INSERT INTO plays (song, artist, timestamp, elapsed_ms)
+                    VALUES (?, ?, ?, ?)
+                ''', plays_data)
+                self.conn.commit()
+                print(f"Inserted {self.cursor.rowcount} plays to SQLite")
+
+        except Exception as e:
+            print(f"Failed to insert play events: {e}")
         
 
     def find_album_genres(self, entry: tuple) -> str:
@@ -404,71 +469,6 @@ class LogAnalyser:
 
         sleep(0.5) # TODO: add proper rate limiting logic
         return genre_str
-    
-
-    def calc_total_plays(self) -> pl.DataFrame:
-        """Calculates the total number of plays of each song in the
-        log dataframe.
-
-        Returns:
-            pl.DataFrame: the dataframe with total plays calculated
-        """
-        summary = self.log_df.group_by(['artist', 'song', 'album', 'genres']).agg([
-            pl.len().alias('total_plays'),
-            pl.col('length_ms').first().alias('song_length_ms'),
-            pl.col('elapsed_ms').sum().alias('total_elapsed_ms'),
-        ]).sort('total_plays', descending=True)
-        return summary
-
-
-    def update_play_stats_in_db(self):
-        """Updates play statistics in database"""
-        # setup
-        play_stats = self.calc_total_plays()
-        print(f"Updating play stats for {len(play_stats)} songs...")
-
-        if self.db_type == 'mongo':
-            bulk_operations = []
-            now = datetime.now()
-            for row in play_stats.iter_rows(named=True):
-                # replace with current stats from log
-                updated_stats = {
-                    'total_plays': row['total_plays'],
-                    'song_length_ms': row['song_length_ms'],
-                    'total_elapsed_ms': row['total_elapsed_ms'],
-                    'last_updated': now
-                }
-
-                # add to bulk operations
-                bulk_operations.append(
-                    UpdateOne(
-                        {'song': row['song'], 'artist': row['artist']},
-                        {'$set': updated_stats}
-                    )
-                )
-
-            # execute batch update
-            if bulk_operations:
-                result = self.song_collection.bulk_write(bulk_operations)
-                print(f"Play stats updated: {result.modified_count} documents modified")
-            else:
-                print("No play stats to update")
-        else:
-            # sqlite update
-            now = datetime.now().isoformat()
-            for row in play_stats.iter_rows(named=True):
-                self.cursor.execute('''
-                    UPDATE songs
-                    SET total_plays = ?,
-                        song_length_ms = ?,
-                        total_elapsed_ms = ?,
-                        last_updated = ?
-                    WHERE song = ? AND artist = ?
-                ''', (row['total_plays'], row['song_length_ms'], row['total_elapsed_ms'], now,
-                      row['song'], row['artist']))
-
-            self.conn.commit()
-            print(f"Play stats updated: {self.cursor.rowcount} songs modified")
 
 
     def df_to_file(self, df: pl.DataFrame = None,
@@ -487,23 +487,58 @@ class LogAnalyser:
         
         
     def load_stats_from_db(self) -> pl.DataFrame:
-        """Loads song statistics from database into a polars DataFrame"""
+        """Loads song statistics aggregated from plays table into a polars DataFrame"""
         if self.db_type == 'mongo':
-            # fetch all documents from mongo
-            all_docs = list(self.song_collection.find({}, projection={'_id': 0}))
+            # aggregate from plays collection
+            pipeline = [
+                {'$group': {
+                    '_id': {'song': '$song', 'artist': '$artist'},
+                    'total_plays': {'$sum': 1},
+                    'total_elapsed_ms': {'$sum': '$elapsed_ms'}
+                }}
+            ]
+            play_stats = list(self.plays_collection.aggregate(pipeline))
+
+            # get song metadata
+            all_songs = list(self.song_collection.find({}, projection={'_id': 0}))
+            songs_metadata = {(s['song'], s['artist']): s for s in all_songs}
+
+            # combine stats with metadata
+            all_docs = []
+            for stat in play_stats:
+                song_key = (stat['_id']['song'], stat['_id']['artist'])
+                if song_key in songs_metadata:
+                    metadata = songs_metadata[song_key]
+                    all_docs.append({
+                        'song': stat['_id']['song'],
+                        'artist': stat['_id']['artist'],
+                        'album': metadata.get('album', ''),
+                        'genres': metadata.get('genres', ''),
+                        'total_plays': stat['total_plays'],
+                        'song_length_ms': metadata.get('song_length_ms', 0) or 0,
+                        'total_elapsed_ms': stat['total_elapsed_ms']
+                    })
         else:
-            # fetch all from sqlite
+            # aggregate from plays table
             self.cursor.execute('''
-                SELECT song, artist, album, genres, total_plays,
-                       song_length_ms, total_elapsed_ms
-                FROM songs
+                SELECT
+                    s.song,
+                    s.artist,
+                    s.album,
+                    s.genres,
+                    COUNT(p.id) as total_plays,
+                    s.song_length_ms,
+                    SUM(p.elapsed_ms) as total_elapsed_ms
+                FROM songs s
+                LEFT JOIN plays p ON s.song = p.song AND s.artist = p.artist
+                GROUP BY s.song, s.artist
             ''')
             rows = self.cursor.fetchall()
             all_docs = [
                 {
                     'song': row[0],
                     'artist': row[1],
-                    'album': row[2],
+                    'album': row[2] or '',
                     'genres': row[3] or '',
                     'total_plays': row[4] or 0,
                     'song_length_ms': row[5] or 0,
@@ -819,7 +854,7 @@ class LogAnalyser:
 
             # finish updating db
             self.batch_add_to_db({}, final_add=True)
-            self.update_play_stats_in_db()
+            self.add_plays_from_dataframe(self.log_df)
 
             # fix truncated album names
             print("Fixing truncated album names in database...")
