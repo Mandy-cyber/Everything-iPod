@@ -12,6 +12,10 @@ from datetime import datetime
 
 from .album_art_fixer import process_images, organize_music_files, clear_temp_directory
 
+# TODO: 
+# - add dummy album cover for when album cover cant be found
+# - abstract some more :sob:
+
 
 def ms_to_mmss(milliseconds: int) -> str:
     """Convert milliseconds to mm:ss format
@@ -71,7 +75,7 @@ def find_ipod() -> Optional[str]:
                     parts = line.split()
                     if len(parts) >= 2:
                         return parts[1]
-    except Exception as e:
+    except Exception:
         pass
 
     return None
@@ -415,6 +419,44 @@ def _should_process_album_art(album_art_storage: str, db_type: str, db_path: str
     return db_last_updated > last_processed
 
 
+def find_album_art(album: str, album_art_storage: str) -> Optional[str]:
+    """Finds the art associated with the given album. Logic from Claude.
+
+    Args:
+        album (str): The album to search for
+        album_art_storage (str): The location of album covers
+
+    Returns:
+        Optional[str]: The location of the album's specific cover art, or None if not found
+    """
+    # build available art dictionary
+    available_art = {}
+    for filename in os.listdir(album_art_storage):
+        if filename.endswith('_cover.jpg'):
+            album_from_file = filename.replace('_cover.jpg', '')
+            available_art[album_from_file] = os.path.join(album_art_storage, filename)
+
+    # try exact match first
+    if album in available_art:
+        return available_art[album]
+
+    # try fuzzy match for truncated filenames or slight variations
+    for file_album, file_art_path in available_art.items():
+        # check if one is a prefix of the other (handles truncation)
+        if file_album.startswith(album) or album.startswith(file_album):
+            return file_art_path
+
+        # check if only difference is version info like (Explicit) vs (Expanded Edition)
+        # strip common version suffixes and compare
+        album_base = re.sub(r' \((Explicit|Expanded Edition|Deluxe|Deluxe Version)\)$', '', album)
+        file_base = re.sub(r' \((Explicit|Expanded Edition|Deluxe|Deluxe Version)\)$', '', file_album)
+
+        if album_base == file_base and album_base != album:
+            return file_art_path
+
+    return None
+
+
 def fix_and_store_album_art(album_art_storage: str, db_type: str = 'local', db_path: str = 'storage/ipod_wrapped.db', force: bool = False) -> bool:
     """Generates a cover.jpg for each album, and copies them locally
 
@@ -524,14 +566,15 @@ def grab_all_metadata(db_type: str, db_path: str, album_art_dir: str,
                 'songs': [
                     {
                         'song': str,
-                        'song_length': str,  # format: "mm:ss"
-                        'total_elapsed': str,  # format: "mm:ss"
+                        'song_length_ms': int,
+                        'total_elapsed_ms': int,
                         'total_plays': int
                     },
                     ...
                 ]
             }
     """
+    # TODO: change total elapsed and song length to return in ms
     # check for bad params
     if db_type != 'mongo' and db_type != 'local':
         return []
@@ -687,8 +730,8 @@ def grab_all_metadata(db_type: str, db_path: str, album_art_dir: str,
             # add metadata to songs
             albums_dict[album_key]['songs'].append({
                 'song': song,
-                'song_length': ms_to_mmss(metadata['song_length_ms']),
-                'total_elapsed': ms_to_mmss(row[3]),
+                'song_length': metadata['song_length_ms'],
+                'total_elapsed': row[3],
                 'total_plays': row[2]
             })
 
@@ -696,39 +739,14 @@ def grab_all_metadata(db_type: str, db_path: str, album_art_dir: str,
 
     # get album art files
     fix_and_store_album_art(album_art_dir, db_type, db_path)
-    available_art = {}
-    for filename in os.listdir(album_art_dir):
-        if filename.endswith('_cover.jpg'):
-            album_from_file = filename.replace('_cover.jpg', '')
-            available_art[album_from_file] = os.path.join(album_art_dir, filename)
 
     # match metadata with album art
     results = []
     for album_key, album_data in albums_dict.items():
+        # find album art
         album_name = album_data['album_name']
         album_artist = album_data['artist']
-        art_path = None
-
-        # try exact match first
-        if album_name in available_art:
-            art_path = available_art[album_name]
-        else:
-            # below logic straight from Claude real talk
-            # try fuzzy match for truncated filenames or slight variations
-            for file_album, file_art_path in available_art.items():
-                # check if one is a prefix of the other (handles truncation)
-                if file_album.startswith(album_name) or album_name.startswith(file_album):
-                    art_path = file_art_path
-                    break
-
-                # check if only difference is version info like (Explicit) vs (Expanded Edition)
-                # strip common version suffixes and compare
-                album_base = re.sub(r' \((Explicit|Expanded Edition|Deluxe|Deluxe Version)\)$', '', album_name)
-                file_base = re.sub(r' \((Explicit|Expanded Edition|Deluxe|Deluxe Version)\)$', '', file_album)
-
-                if album_base == file_base and album_base != album_name:
-                    art_path = file_art_path
-                    break
+        art_path = find_album_art(album_name, album_art_dir)
 
         # only include albums that have matching art
         if art_path:
@@ -742,4 +760,247 @@ def grab_all_metadata(db_type: str, db_path: str, album_art_dir: str,
 
     return results
     
+
+def create_genre_mappings(db_type: str, db_path: str, album_art_dir: str,
+                        start_date: Optional[datetime] = None,
+                        end_date: Optional[datetime] = None) -> List[dict]:
+    """Creates a mapping of genre to songs (using data in the given db).
+
+    Args:
+        db_type (str): db_type (str): The type of db ('mongo' or 'local')
+        db_path (str): The location of the db if 'local'
+        album_art_dir (str): The location of album covers
+        start_date (Optional[datetime]): Filter plays from this date onwards
+        end_date (Optional[datetime]): Filter plays up to this date
+
+    Returns:
+        List[dict]: [
+            {
+                "genre": str,
+                "total_elapsed_ms": int,
+                "total_plays": int,
+                "songs": [
+                    {
+                        "song": str,
+                        "artist": str,
+                        "art_path": str,
+                    }
+                    ...
+                ]
+            },
+            ...
+        ]
+    """
+    # check for bad params
+    if db_type != 'mongo' and db_type != 'local':
+        return []
+
+    if db_type == 'local' and (not db_path or len(db_path) == 0):
+        return []
     
+    # setup
+    mappings = []
+    genres = set()
+    songs_dict = {}
+
+    # mongo search
+    if db_type == 'mongo':
+        client = MongoClient(os.getenv('MONGODB_URI'))
+        db = client.song_db
+        song_collection = db.songs
+        plays_collection = db.plays
+
+        # get song album + genres
+        all_songs = song_collection.find(
+            {'album': {'$ne': None}, 'artist': {'$ne': None}},
+            projection={'_id': 0, 'song': 1, 'artist': 1, 'album': 1, 'genres': 1}
+        )
+
+        for song_doc in all_songs:
+            song_key = (song_doc['song'], song_doc['artist'])
+            album_art = find_album_art(song_doc['album'], album_art_dir)
+            songs_dict[song_key] = {
+                'song': song_doc['song'],
+                'artist': song_doc['artist'],
+                'art_path': album_art,
+                'total_elapsed_ms': 0,  # added later
+                'total_plays': 0,       # added later
+                'genres': song_doc.get('genres', '')
+            }
+
+            # parse out genres
+            grs = song_doc.get('genres', '')
+            if grs:
+                genres.update(grs.split(','))
+
+        # build date filter for plays
+        plays_filter = {}
+        if start_date or end_date:
+            plays_filter['timestamp'] = {}
+            if start_date:
+                plays_filter['timestamp']['$gte'] = start_date
+            if end_date:
+                plays_filter['timestamp']['$lte'] = end_date
+
+        # aggregate play stats
+        pipeline = [
+            {'$match': plays_filter} if plays_filter else {'$match': {}},
+            {'$group': {
+                '_id': {'song': '$song', 'artist': '$artist'},
+                'total_plays': {'$sum': 1},
+                'total_elapsed_ms': {'$sum': '$elapsed_ms'}
+            }}
+        ]
+
+        play_stats = list(plays_collection.aggregate(pipeline))
+
+        # iter through songs
+        for stat in play_stats:
+            song = stat['_id']['song']
+            artist = stat['_id']['artist']
+            song_key = (song, artist)
+
+            if song_key not in songs_dict:
+                continue
+
+            # finish adding info to songs
+            songs_dict[song_key]['total_elapsed_ms'] = stat['total_elapsed_ms']
+            songs_dict[song_key]['total_plays'] = stat['total_plays']
+
+        # create temp genre dict
+        temp_dict = {}
+        for genre in genres:
+            g = genre if len(genre) > 0 else "unknown"
+            genre = g.lower()
+            temp_dict[genre] = {
+                "genre": genre,
+                "total_elapsed_ms": 0,
+                "total_plays": 0,
+                "songs": []
+            }
+
+        # add songs
+        for key, song_info in songs_dict.items():
+            song, artist = key
+            song_genres = song_info["genres"].split(",")
+            song_info_copy = song_info.copy()
+            song_info_copy.pop("genres")
+            for g in song_genres:
+                g_lower = g.strip().lower() if g.strip() else "unknown"
+                if g_lower in temp_dict:
+                    elapsed, plays = song_info_copy["total_elapsed_ms"], song_info_copy["total_plays"]
+                    song_info_copy.pop("total_elapsed_ms")
+                    song_info_copy.pop("total_plays")
+                    temp_dict[g_lower]["songs"].append(song_info_copy)
+                    temp_dict[g_lower]["total_elapsed_ms"] += elapsed
+                    temp_dict[g_lower]["total_plays"] += plays
+
+        # finalize mappings
+        for val in temp_dict.values():
+            mappings.append(val)
+
+        return mappings
+    else:
+        # local sqlite
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        
+        # get song album + genres
+        cursor.execute('''
+            SELECT song, artist, album, genres
+            FROM songs
+            WHERE album IS NOT NULL AND artist IS NOT NULL
+        ''')
+        
+        for row in cursor.fetchall():
+            # store song info for later
+            song_key = (row[0], row[1])
+            album_art = find_album_art(row[2], album_art_dir)
+            songs_dict[song_key] = {
+                'song': row[0],
+                'artist': row[1],
+                'art_path': album_art,
+                'total_elapsed_ms': 0,  # added later
+                'total_plays': 0,       # added later
+                'genres': row[3]
+            }
+            
+            # parse out genres
+            grs: str = row[3]
+            genres.update(grs.split(","))
+            
+        # build date filters for plays
+        date_filter = ''
+        params = []
+        if start_date or end_date:
+            conditions = []
+            if start_date:
+                conditions.append('timestamp >= ?')
+                params.append(start_date.isoformat())
+            if end_date:
+                conditions.append('timestamp <= ?')
+                params.append(end_date.isoformat())
+            date_filter = 'WHERE ' + ' AND '.join(conditions)
+
+        # aggregate play stats from plays table
+        query = f'''
+            SELECT
+                song,
+                artist,
+                COUNT(*) as total_plays,
+                SUM(elapsed_ms) as total_elapsed_ms
+            FROM plays
+            {date_filter}
+            GROUP BY song, artist
+        '''
+        cursor.execute(query, params)
+        
+        # iter through songs
+        for row in cursor.fetchall():
+            song = row[0]
+            artist = row[1]
+            song_key = (song, artist)
+            
+            if song_key not in songs_dict:
+                continue
+            
+            # finish adding info to songs
+            songs_dict[song_key]['total_elapsed_ms'] = row[3]
+            songs_dict[song_key]['total_plays'] = row[2]
+            
+        conn.close()
+        
+        # create temp genre dict
+        temp_dict = dict()
+        for genre in genres:
+            g = genre if len(genre) > 0 else "unknown"
+            genre = g.lower()
+            temp_dict[genre] = {
+                "genre": genre,
+                "total_elapsed_ms": 0,
+                "total_plays": 0,
+                "songs": []
+            }
+            
+        # add songs
+        for key, song_info in songs_dict.items():
+            song, artist = key
+            song_genres = song_info["genres"].split(",")
+            song_info_copy = song_info.copy()
+            song_info_copy.pop("genres")
+            for g in song_genres:
+                g_lower = g.strip().lower() if g.strip() else "unknown"
+                if g_lower in temp_dict:
+                    elapsed, plays = song_info_copy["total_elapsed_ms"], song_info_copy["total_plays"]
+                    song_info_copy.pop("total_elapsed_ms")
+                    song_info_copy.pop("total_plays")
+                    temp_dict[g_lower]["songs"].append(song_info_copy)
+                    temp_dict[g_lower]["total_elapsed_ms"] += elapsed
+                    temp_dict[g_lower]["total_plays"] += plays
+            
+            
+        # finalize mappings
+        for val in temp_dict.values():
+            mappings.append(val)
+
+        return mappings

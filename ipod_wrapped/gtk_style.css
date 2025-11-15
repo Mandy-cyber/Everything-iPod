@@ -35,6 +35,11 @@ windowcontrols button image {
     font-size: 9px;
 }
 
+/* GENRE */
+.genre-tag {
+    
+}
+
 /* HEADER BAR & VIEW SWITCHER */
 headerbar {
     background-color: #1b1b1e;
@@ -92,20 +97,16 @@ headerbar viewswitcher label {
     border: 2px solid #1b1b1e;
 }
 
-.bottom-bar-expand-btn {
-    
-}
-
 .bottom-bar-expand-btn:hover, .bottom-bar-collapse-btn:hover {
     background-color: #923a78;
 }
-
 
 /* START WRAPPED */
 .start-wrapped-title {
     font-weight: 500;
     font-size: 18px;
-    margin-top: 50px;
+    margin-top: 60px;
+    margin-bottom: 10px;
 }
 
 .start-wrapped-subtitle {
@@ -113,21 +114,21 @@ headerbar viewswitcher label {
     font-size: 14px;
 }
 
-.start-wrapped-explainer {
+.start-wrapped-explainer { /* TODO: come back and figure out how to center this */
     font-weight: 200;
-    font-size: 11px;
-    margin: 10px 100px 0px 100px;
+    font-size: 11px; 
+    margin: 20px 100px 0px 100px;
+}
+
+.start-wrapped-spinner {
+    margin-top: 15px;
 }
 
 .start-wrapped-btn {
-    margin-top: 40px;
+    margin-top: 20px;
 }
 
 /* BANNERS */
-.banner-error, .banner-success, .banner-info {
-
-}
-
 .banner-error {
     background-color: rgba(192, 28, 40, 0.2);
     border-left: 3px solid #c01c28;

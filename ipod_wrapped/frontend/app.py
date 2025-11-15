@@ -3,9 +3,13 @@ import gi
 gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
 from gi.repository import Gtk, Gdk, Adw
-from .pages import AlbumsPage, SongsPage, WrappedPage
+from .pages import AlbumsPage, SongsPage, WrappedPage, GenresPage
 from .widgets.bottom_bar import create_bottom_bar
 from .widgets.banner import create_banner
+
+from backend import create_genre_mappings
+
+# TODO: add 'About Dialogue' (check adw widget gallery)
 
 class MainWindow(Adw.ApplicationWindow):
     """Main application window with navigation"""
@@ -41,11 +45,13 @@ class MainWindow(Adw.ApplicationWindow):
         self.stack.set_hexpand(True)
         
         # add pages to stack
+        self.genres_page = GenresPage(db_type, db_path, album_art_dir, self.toggle_bottom_bar)
         self.albums_page = AlbumsPage(db_type, db_path, album_art_dir, self.toggle_bottom_bar)
         self.songs_page = SongsPage()
         self.wrapped_page = WrappedPage()
         
         # page titles w/icons
+        self.stack.add_titled_with_icon(self.genres_page, "genres", "Genres", "org.gnome.Nautilus-symbolic")
         self.stack.add_titled_with_icon(self.albums_page, "albums", "Albums", "media-optical-symbolic")
         self.stack.add_titled_with_icon(self.songs_page, "songs", "Songs", "audio-x-generic-symbolic")
         self.stack.add_titled_with_icon(self.wrapped_page, "wrapped", "Wrapped", "emblem-favorite-symbolic")
@@ -87,7 +93,8 @@ class MainWindow(Adw.ApplicationWindow):
         # place banners (flush with bottom of window)
         main_box.append(self.error_banner)
         main_box.append(self.success_banner)
-
+            
+    
     def refresh_all_pages(self):
         """Refresh all pages after data has been updated"""
         # refresh albums page
