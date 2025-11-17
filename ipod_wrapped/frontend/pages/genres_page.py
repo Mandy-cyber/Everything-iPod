@@ -75,11 +75,18 @@ class GenresPage(Gtk.ScrolledWindow):
             # wait to toggle
             GLib.idle_add(self.toggle_bottom_bar)
         else:
-            self.genre_mappings = genre_mappings
+            self.genre_mappings = sorted(genre_mappings, key=lambda d: d['genre'])
             # populate with genre tags
-            for genre in genre_mappings:
+            first_tag = None
+            for genre in self.genre_mappings:
                 tag = create_genre_tag(genre, self.TAG_SIZE, self.right_box)
                 self.flowbox.append(tag)
+                if first_tag is None:
+                    first_tag = tag
+
+            # auto-click first genre tag
+            if first_tag:
+                first_tag.emit('clicked')
                 
     def refresh(self):
         """Refresh the page by reloading genres from database"""

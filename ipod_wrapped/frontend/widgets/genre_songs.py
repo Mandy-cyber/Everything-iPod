@@ -4,12 +4,13 @@ import random
 gi.require_version('Gtk', '4.0')
 from gi.repository import Gtk
 
-def display_genre_songs(genre_info: dict, content_box: Gtk.Box) -> Gtk.Box:
+def display_genre_songs(genre_info: dict, content_box: Gtk.Box, play_song_callback=None) -> Gtk.Box:
     """Displays the genre's songs and basic stats
 
     Args:
         genre_info (dict): The genre to display info/songs for
         content_box (Gtk.Box): The box where the display will go
+        play_song_callback: Optional callback function(song_path, metadata) to play songs
 
     Returns:
         Gtk.Box: The box updated with the display
@@ -55,7 +56,7 @@ def display_genre_songs(genre_info: dict, content_box: Gtk.Box) -> Gtk.Box:
     title.add_css_class('genre-title-label')
     text_box.append(title)
 
-    # total plays w/ info icon
+    # total plays w/info icon
     plays_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
     plays_box.set_halign(Gtk.Align.START)
 
@@ -94,7 +95,7 @@ def display_genre_songs(genre_info: dict, content_box: Gtk.Box) -> Gtk.Box:
 
     elapsed_label = Gtk.Label()
     elapsed_label.set_use_markup(True)
-    elapsed_label.set_markup(f"<b>Total Elapsed:</b> {total_mins:,}{"min" if total_mins == 1 else "mins"}")
+    elapsed_label.set_markup(f"<b>Total Elapsed:</b> {total_mins:,}{'min' if total_mins == 1 else 'mins'}")
     elapsed_label.set_halign(Gtk.Align.START)
     elapsed_label.set_ellipsize(3)
     elapsed_label.set_hexpand(True)
@@ -114,12 +115,12 @@ def display_genre_songs(genre_info: dict, content_box: Gtk.Box) -> Gtk.Box:
 
     # load in songs
     for song_info in songs:
-        listing = create_song_listing(song_info)
+        listing = create_song_listing(song_info, play_song_callback)
         songs_box.append(listing)
 
     return content_box
 
-def create_song_listing(song_info: dict) -> Gtk.Box:
+def create_song_listing(song_info: dict, play_song_callback=None) -> Gtk.Box:
     song, artist, art_path = song_info.values()
     
     # listing box
@@ -142,9 +143,10 @@ def create_song_listing(song_info: dict) -> Gtk.Box:
     text_label.set_ellipsize(3)
     text_label.set_xalign(0)
     text_label.set_hexpand(True)
-    text_label.set_tooltip_text(full_text)
     text_label.add_css_class('genre-song-text')
     box.append(text_label)
+    
+    # TODO: add right click with menu showing 'add to queue' 'play next'
     
     return box
     
