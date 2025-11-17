@@ -1,3 +1,5 @@
+from enum import Enum
+
 # misc.
 BATCH_SIZE = 50
 ipod_log_pattern = r'^(\d+):(\d+):(\d+):(.+)$'
@@ -6,6 +8,12 @@ song_extensions = ['.mp3', '.flac', '.ogg', '.wav', '.m4a']
 # lastfm
 lastfm_root = 'http://ws.audioscrobbler.com'
 user_auth_root = 'http://www.last.fm/api/auth'
+
+# enums
+class Repeat(Enum):
+    NONE: str = "none"
+    ONE: str = "one"
+    ALL: str = "all"
 
 # normalization for merging duplicate genres
 genre_mappings = {
@@ -83,6 +91,7 @@ genre_mappings = {
     'kpop': 'k-pop',
     'shoegazer': 'shoegaze',
     'hard rock': 'hardrock',
+    'afrobeats': 'afrobeat',
 }
 
 # Source: http://ocelma.net/last.fm-genre-tagcloud/index.html
@@ -121,6 +130,7 @@ all_genres = set([
     "alternative pop",
     "alternative pop-rock",
     "alternative rap",
+    "alternative rnb",
     "alternative rock",
     "ambient",
     "ambient black metal",
