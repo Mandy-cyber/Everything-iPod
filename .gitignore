@@ -12,6 +12,9 @@ scratch*
 *.sh
 total_plays.csv
 album-art/
+*.backup
+.claude/
+*.txt
 
 # extremely rough, still working on
 playlist-maker/*

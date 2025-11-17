@@ -241,6 +241,9 @@ class LogAnalyser:
         """Removes the 'Explicit' tag and re-adds it neatly to the
         given string. This is because sometimes (often) the rockbox
         log cuts it off...
+        
+        EDIT: nevermind, i just had bad file names LOL. Keeping here
+        just in case others have this problem though
 
         Args:
             file (str): the file name to be fixed
@@ -865,6 +868,7 @@ class LogAnalyser:
             
             # run stats
             self.stats = self.calc_all_stats()
+            print(json.dumps(self.stats, indent=4))
         except Exception as e:
             print(f"ERROR: {e}")
             return {"error": "Something went wrong. Please try again later"}
