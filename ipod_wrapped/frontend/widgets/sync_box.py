@@ -3,7 +3,7 @@ gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
 from gi.repository import Gtk, Adw, GLib
 from backend import LogAnalyser
-from .banner import create_banner, show_banner, hide_banner
+from .banner import show_banner, hide_banner
 import threading
 
 def create_sync_box_widgets(error_banner: Adw.Banner, success_banner: Adw.Banner, refresh_callback) -> list:

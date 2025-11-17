@@ -1,17 +1,15 @@
 import gi
 gi.require_version('Gtk', '4.0')
-gi.require_version('Adw', '1')
-from gi.repository import Gtk, Adw
-from .sync_box import create_sync_box_widgets
+from gi.repository import Gtk
 
-def create_bottom_bar(toggle_callback, error_banner: Adw.Banner, success_banner: Adw.Banner, refresh_callback) -> tuple[Gtk.Box, Gtk.Box]:
+def create_bottom_bar(toggle_callback) -> tuple[Gtk.Box, Gtk.Box]:
     """Creates the bottom bar with collapsed and expanded views.
+    
+    Collapsed = currently playing song
+    Expanded = queue UI and expanded 'currently playing'
 
     Args:
         toggle_callback: Function to call when toggling the bar
-        error_banner (Adw.Banner): Banner for error messages
-        success_banner (Adw.Banner): Banner for success messages
-        refresh_callback: Function to call to refresh all pages after sync
     """
     # collapsed view (horizontal bar)
     collapsed_bar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
@@ -19,16 +17,8 @@ def create_bottom_bar(toggle_callback, error_banner: Adw.Banner, success_banner:
     collapsed_bar.add_css_class('bottom-bar-collapsed')
 
     # expand button + spacers
-    spacer_left = Gtk.Box()
-    spacer_left.set_hexpand(True)
-    collapsed_bar.append(spacer_left)
-
-    expand_button = create_toggle_button('pan-up-symbolic', 'bottom-bar-expand-btn', toggle_callback)
-    collapsed_bar.append(expand_button)
-
-    spacer_right = Gtk.Box()
-    spacer_right.set_hexpand(True)
-    collapsed_bar.append(spacer_right)
+    # TODO: on bottom bar click show expanded
+    # TODO: add currently playing UI elements here
 
     # expanded view
     expanded_bar = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
@@ -53,8 +43,8 @@ def create_bottom_bar(toggle_callback, error_banner: Adw.Banner, success_banner:
     collapse_container.append(collapse_spacer_right)
     expanded_bar.append(collapse_container)
 
-    # add widgets to expand page
-    widgets = create_sync_box_widgets(error_banner, success_banner, refresh_callback)
+    # add queue ui widgets to expanded view
+    widgets = []
     [expanded_bar.append(widget) for widget in widgets]
 
     return collapsed_bar, expanded_bar
@@ -78,3 +68,42 @@ def create_toggle_button(icon_name: str, css_class: str, toggle_callback) -> Gtk
     toggle_button.set_valign(Gtk.Align.START)
     toggle_button.connect("clicked", lambda btn: toggle_callback())
     return toggle_button
+
+
+# TODO: these stubs will be implemented later
+def update_now_playing(song_metadata: dict) -> None:
+    """Update the bottom bar with currently playing song info
+
+    Args:
+        song_metadata (dict): Metadata including song, artist, album, art_path
+    """
+    pass
+
+
+def update_playback_state(is_playing: bool, is_paused: bool) -> None:
+    """Update play/pause button state
+
+    Args:
+        is_playing (bool): Whether music is currently playing
+        is_paused (bool): Whether playback is paused
+    """
+    pass
+
+
+def update_position(position_ms: int, duration_ms: int) -> None:
+    """Update progress bar and time display
+
+    Args:
+        position_ms (int): Current position in milliseconds
+        duration_ms (int): Total duration in milliseconds
+    """
+    pass
+
+
+def update_queue_display(queue: list) -> None:
+    """Update the expanded queue view
+
+    Args:
+        queue (list): List of queued songs with metadata
+    """
+    pass
