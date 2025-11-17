@@ -47,7 +47,7 @@ class MainWindow(Adw.ApplicationWindow):
         # add pages to stack
         self.genres_page = GenresPage(db_type, db_path, album_art_dir, self.toggle_bottom_bar)
         self.albums_page = AlbumsPage(db_type, db_path, album_art_dir, self.toggle_bottom_bar)
-        self.songs_page = SongsPage()
+        self.songs_page = SongsPage(db_type, db_path, album_art_dir, self.toggle_bottom_bar)
         self.wrapped_page = WrappedPage()
         
         # page titles w/icons
@@ -76,12 +76,7 @@ class MainWindow(Adw.ApplicationWindow):
         # create bottom bar
         self.bottom_bar_container = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.bottom_bar_container.set_hexpand(True)
-        self.collapsed_bar, self.expanded_bar = create_bottom_bar(
-            self.toggle_bottom_bar,
-            self.error_banner,
-            self.success_banner,
-            self.refresh_all_pages
-        )
+        self.collapsed_bar, self.expanded_bar = create_bottom_bar(self.toggle_bottom_bar)
         self.bottom_bar_container.append(self.collapsed_bar)
         self.bottom_bar_container.append(self.expanded_bar)
 

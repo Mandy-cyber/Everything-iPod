@@ -10,7 +10,8 @@ from .wrapped_helpers import (
     find_album_art,
     ms_to_mmss,
     has_data,
-    create_genre_mappings
+    create_genre_mappings,
+    grab_all_songs
 )
 from .album_art_fixer import process_images, organize_music_files, clear_temp_directory
 from .constants import *
@@ -29,4 +30,5 @@ __all__ = [
     'clear_temp_directory',
     'has_data',
     'create_genre_mappings',
+    'grab_all_songs'
 ]

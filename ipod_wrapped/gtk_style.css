@@ -91,6 +91,10 @@ windowcontrols button image {
     padding: 3px 0;
 }
 
+.genre-song-row:hover {
+    border-bottom: 1px solid #2a2a2e;
+}
+
 .genre-song-art {
     margin-left: 10px;
     margin-right: 3px;
@@ -100,6 +104,60 @@ windowcontrols button image {
     font-size: 9px;
     font-weight: 300;
 }
+
+/* SONGS */
+/* .songs-page {
+    margin: 0px;
+} */
+
+.songs-table {
+    margin: 32px 25px 0px 25px;
+    background-color: #1b1b1e;
+    border-radius: 3% 3% 0% 0%;
+}
+
+columnview row:selected,
+columnview row:selected:hover {
+    background-color: #923a78;
+}
+
+.song-row:selected {
+    background-color: #923a78;
+}
+
+.song-header-box{
+    margin-left: 50px;
+    margin-right: 50px;
+}
+
+.song-page-image{}
+
+.song-page-title-label{
+    font-weight: 700;
+    font-size: 20px;
+    margin-bottom: 2px;
+}
+
+.song-page-album-label{
+    font-weight: 500;
+    font-size: 14px;
+    margin-bottom: 2px;
+}
+
+.song-page-artist-label{
+    margin-bottom: 10px;
+}
+
+.song-page-genres-label{
+
+}
+.song-page-stats-label{}
+
+/* columnview > header {
+    border-bottom: none;
+    box-shadow: none;
+} */
+
 
 /* HEADER BAR & VIEW SWITCHER */
 headerbar {

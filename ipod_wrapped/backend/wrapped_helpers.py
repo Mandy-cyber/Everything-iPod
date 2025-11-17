@@ -765,7 +765,7 @@ def create_genre_mappings(db_type: str, db_path: str, album_art_dir: str,
     """Creates a mapping of genre to songs (using data in the given db).
 
     Args:
-        db_type (str): db_type (str): The type of db ('mongo' or 'local')
+        db_type (str): The type of db ('mongo' or 'local')
         db_path (str): The location of the db if 'local'
         album_art_dir (str): The location of album covers
         start_date (Optional[datetime]): Filter plays from this date onwards
@@ -1002,9 +1002,222 @@ def create_genre_mappings(db_type: str, db_path: str, album_art_dir: str,
                     temp_dict[g_lower]["total_elapsed_ms"] += elapsed
                     temp_dict[g_lower]["total_plays"] += plays
             
-            
+
         # finalize mappings
         for val in temp_dict.values():
             mappings.append(val)
 
         return mappings
+    
+    
+def grab_all_songs(db_type: str, db_path: str, album_art_dir: str,
+                        start_date: Optional[datetime] = None,
+                        end_date: Optional[datetime] = None) -> List[dict]:
+    """Grabs all songs, and relevant metadata, from the given db.
+
+    Args:
+        db_type (str): The type of db ('mongo' or 'local')
+        db_path (str): The location of the db if 'local'
+        album_art_dir (str): The location of album covers
+        start_date (Optional[datetime]): Filter songs from this date onwards
+        end_date (Optional[datetime]): Filter songs up to this date
+
+    Returns:
+        List[dict]: [
+            {
+                "title": str,
+                "artist": str,
+                "album": str,
+                "duration": int,
+                "metadata": {
+                    "genres": str,
+                    "art_path": str,
+                    "total_elapsed_ms": int,
+                    "total_plays": int,
+                }
+            },
+            ...
+        ]
+    """
+    # check for bad params
+    if db_type != 'mongo' and db_type != 'local':
+        return []
+
+    if db_type == 'local' and (not db_path or len(db_path) == 0):
+        return []
+    
+    # setup
+    all_songs = []
+    songs_dict = {}
+    
+    # mongo search
+    if db_type == 'mongo':
+        client = MongoClient(os.getenv('MONGODB_URI'))
+        db = client.song_db
+        song_collection = db.songs
+        plays_collection = db.plays
+
+        # get song metadata
+        all_songs_cursor = song_collection.find(
+            {'song': {'$ne': None}, 'artist': {'$ne': None}, 'song_length_ms': {'$ne': None}},
+            projection={'_id': 0, 'song': 1, 'artist': 1, 'album': 1, 'genres': 1, 'song_length_ms': 1}
+        )
+
+        for song_doc in all_songs_cursor:
+            song_key = (song_doc['song'], song_doc['artist'])
+            album_art = find_album_art(song_doc['album'], album_art_dir)
+            songs_dict[song_key] = {
+                'title': song_doc['song'],
+                'artist': song_doc['artist'],
+                'album': song_doc['album'],
+                'duration': song_doc.get('song_length_ms', 0) or 0,
+                'metadata': {
+                    'genres': song_doc.get('genres', ''),
+                    'art_path': album_art,
+                    'total_elapsed_ms': 0,  # added later
+                    'total_plays': 0,       # added later
+                }
+            }
+
+        # build date filter for plays
+        plays_filter = {}
+        if start_date or end_date:
+            plays_filter['timestamp'] = {}
+            if start_date:
+                plays_filter['timestamp']['$gte'] = start_date
+            if end_date:
+                plays_filter['timestamp']['$lte'] = end_date
+
+        # aggregate play stats
+        pipeline = [
+            {'$match': plays_filter} if plays_filter else {'$match': {}},
+            {'$group': {
+                '_id': {'song': '$song', 'artist': '$artist'},
+                'total_plays': {'$sum': 1},
+                'total_elapsed_ms': {'$sum': '$elapsed_ms'}
+            }}
+        ]
+
+        play_stats = list(plays_collection.aggregate(pipeline))
+
+        # update songs with play stats
+        for stat in play_stats:
+            song = stat['_id']['song']
+            artist = stat['_id']['artist']
+            song_key = (song, artist)
+
+            if song_key not in songs_dict:
+                continue
+
+            songs_dict[song_key]['metadata']['total_elapsed_ms'] = stat['total_elapsed_ms']
+            songs_dict[song_key]['metadata']['total_plays'] = stat['total_plays']
+
+        # finish up
+        for val in songs_dict.values():
+            all_songs.append(val)
+
+        return all_songs
+    else:
+        # local sqlite
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        
+        # get most info
+        cursor.execute('''
+            SELECT song, artist, album, genres, song_length_ms
+            FROM songs
+            WHERE song IS NOT NULL AND artist IS NOT NULL AND song_length_ms IS NOT NULL          
+        ''')
+        
+        for row in cursor.fetchall():
+            # store for later
+            song_key = (row[0], row[1])
+            album_art = find_album_art(row[2], album_art_dir)
+            songs_dict[song_key] = {
+                'title': row[0],
+                'artist': row[1],
+                'album': row[2],
+                'duration': row[4],
+                'metadata': {
+                    'genres': row[3],
+                    'art_path': album_art,
+                    'total_elapsed_ms': 0,  # added later
+                    'total_plays': 0,       # added later
+                }
+            }
+            
+        # build date filters for plays
+        date_filter = ''
+        params = []
+        if start_date or end_date:
+            conditions = []
+            if start_date:
+                conditions.append('timestamp >= ?')
+                params.append(start_date.isoformat())
+            if end_date:
+                conditions.append('timestamp <= ?')
+                params.append(end_date.isoformat())
+            date_filter = 'WHERE ' + ' AND '.join(conditions)
+
+        # aggregate play stats from plays table
+        query = f'''
+            SELECT
+                song,
+                artist,
+                COUNT(*) as total_plays,
+                SUM(elapsed_ms) as total_elapsed_ms
+            FROM plays
+            {date_filter}
+            GROUP BY song, artist
+        '''
+        cursor.execute(query, params)
+        
+        # iter through songs
+        for row in cursor.fetchall():
+            song = row[0]
+            artist = row[1]
+            song_key = (song, artist)
+            
+            if song_key not in songs_dict:
+                continue
+            
+            # finish adding info to songs
+            songs_dict[song_key]['metadata']['total_elapsed_ms'] = row[3]
+            songs_dict[song_key]['metadata']['total_plays'] = row[2]
+
+        conn.close()
+        
+        # finish up
+        for val in songs_dict.values():
+            all_songs.append(val)
+        
+        # print(json.dumps(all_songs, indent=4))
+        return all_songs
+
+
+
+# def find_song_file(song_name: str, artist: str, music_dir: str) -> Optional[str]:
+#     """Find the file path for a song by searching the music directory
+
+#     Args:
+#         song_name (str): Name of the song
+#         artist (str): Artist name
+#         music_dir (str): Root music directory to search
+
+#     Returns:
+#         Optional[str]: Full path to the song file, or None if not found
+#     """
+#     pass
+
+
+# def log_ui_play(db_type: str, db_path: str, song: str, artist: str, elapsed_ms: int) -> None:
+    # """Log a play from the UI to the ui_plays table/collection
+
+    # Args:
+    #     db_type (str): Database type ('mongo' or 'local')
+    #     db_path (str): Path to local database if applicable
+    #     song (str): Song name
+    #     artist (str): Artist name
+    #     elapsed_ms (int): Milliseconds listened
+    # """
+    # pass
