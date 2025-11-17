@@ -15,6 +15,7 @@ from .album_art_fixer import process_images, organize_music_files, clear_temp_di
 # TODO: 
 # - add dummy album cover for when album cover cant be found
 # - abstract some more :sob:
+# - round up total_elapsed_ms sum
 
 
 def ms_to_mmss(milliseconds: int) -> str:

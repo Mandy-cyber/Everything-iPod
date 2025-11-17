@@ -221,10 +221,14 @@ headerbar viewswitcher label {
 }
 
 /* START WRAPPED */
+.start-wrapped-box {
+    padding: 20px;
+}
+
 .start-wrapped-title {
     font-weight: 500;
     font-size: 18px;
-    margin-top: 60px;
+    margin-top: 20px;
     margin-bottom: 10px;
 }
 
@@ -245,6 +249,21 @@ headerbar viewswitcher label {
 
 .start-wrapped-btn {
     margin-top: 20px;
+}
+
+/* NAV MENU */
+.nav-menu-icon,
+.nav-about-icon,
+.nav-start-icon {
+    background-color: #2a2a2e;
+    min-width: 33px;
+    min-height: 33px;
+}
+
+.nav-menu-icon:hover,
+.nav-about-icon:hover,
+.nav-start-icon:hover {
+    background-color: #923a78;
 }
 
 /* BANNERS */

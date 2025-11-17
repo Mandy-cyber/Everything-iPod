@@ -3,11 +3,11 @@ import gi
 gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
 from gi.repository import Gtk, Gdk, Adw
+
 from .pages import AlbumsPage, SongsPage, WrappedPage, GenresPage
 from .widgets.bottom_bar import create_bottom_bar
 from .widgets.banner import create_banner
-
-from backend import create_genre_mappings
+from .widgets.menu_nav import create_menu_nav
 
 # TODO: add 'About Dialogue' (check adw widget gallery)
 
@@ -65,13 +65,22 @@ class MainWindow(Adw.ApplicationWindow):
         header_bar = Adw.HeaderBar()
         header_bar.set_title_widget(view_switcher)
         main_box.append(header_bar)
-        
-        # add stack to main box
-        main_box.append(self.stack)
+
+        # wrap stack in overlay for floating menu button
+        self.overlay = Gtk.Overlay()
+        self.overlay.set_child(self.stack)
 
         # create banner placeholders
         self.error_banner = create_banner("", "error")
         self.success_banner = create_banner("", "success")
+
+        # create menu nav button
+        self.menu_btn = create_menu_nav(self.overlay, self, self.error_banner,
+                                        self.success_banner, self.refresh_all_pages)
+        self.overlay.add_overlay(self.menu_btn)
+
+        # add overlay to main box
+        main_box.append(self.overlay)
 
         # create bottom bar
         self.bottom_bar_container = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
@@ -109,13 +118,13 @@ class MainWindow(Adw.ApplicationWindow):
         self.bottom_bar_expanded = not self.bottom_bar_expanded
 
         if self.bottom_bar_expanded:
-            # hide mini bar, show full view
+            # hide pages and mini bar, show full view
             self.stack.set_visible(False)
             self.collapsed_bar.set_visible(False)
             self.expanded_bar.set_visible(True)
             self.expanded_bar.set_vexpand(True)
-        else:            
-            # show mini bar, hide full view
+        else:
+            # show pages and mini bar, hide full view
             self.stack.set_visible(True)
             self.collapsed_bar.set_visible(True)
             self.expanded_bar.set_visible(False)
