@@ -1,3 +1,4 @@
+from typing import Optional
 import gi
 gi.require_version('Gtk', '4.0')
 from gi.repository import Gtk, Gio, GObject
@@ -14,7 +15,10 @@ class Song(GObject.Object):
     album = GObject.Property(type=str, default='')
     duration = GObject.Property(type=str, default='')
     
-    def __init__(self, title: str, artist: str, album: str, duration: str) -> None:
+    def __init__(
+        self, title: Optional[str] = None, artist: Optional[str] = None, 
+        album: Optional[str] = None, duration: Optional[str] = None
+        ) -> None:
         """Initialize with song data"""
         super().__init__()
         self.is_playing = False
@@ -111,7 +115,7 @@ def _create_column_sorter(column: Gtk.ColumnViewColumn, prop_name: str):
     # set the sorter on the column
     column.set_sorter(sorter)
 
-def create_songs_table(selection_model: Gtk.SelectionModel, sort_model: Gtk.SortListModel, scroll_to_top_callback=None) -> Gtk.ColumnView:
+def create_songs_table(selection_model: Gtk.SelectionModel, sort_model: Gtk.SortListModel, scroll_to_top_callback=None, show_columns: Optional[dict] = None) -> Gtk.ColumnView:
     """Creates the ColumnView (i.e. songs table)."""
     # setup table
     column_view = Gtk.ColumnView(model=selection_model)
@@ -119,48 +123,55 @@ def create_songs_table(selection_model: Gtk.SelectionModel, sort_model: Gtk.Sort
     column_view.set_show_column_separators(False)
     column_view.add_css_class('songs-table')
 
+    if show_columns is None:
+        show_columns = {'title': True, 'artist': True, 'album': True, 'duration': True}
+
     # title column
-    title_factory = Gtk.SignalListItemFactory()
-    title_factory.connect("setup", _setup_title_column)
-    title_factory.connect("bind", _bind_title_column)
-    title_column = Gtk.ColumnViewColumn(title="Title", factory=title_factory)
-    title_column.set_resizable(True)
-    title_column.set_fixed_width(180)
-    title_column.set_expand(True)
-    _create_column_sorter(title_column, 'title')
-    column_view.append_column(title_column)
+    if show_columns.get('title', True):
+        title_factory = Gtk.SignalListItemFactory()
+        title_factory.connect("setup", _setup_title_column)
+        title_factory.connect("bind", _bind_title_column)
+        title_column = Gtk.ColumnViewColumn(title="Title", factory=title_factory)
+        title_column.set_resizable(True)
+        title_column.set_fixed_width(180)
+        title_column.set_expand(True)
+        _create_column_sorter(title_column, 'title')
+        column_view.append_column(title_column)
 
     # artist column
-    artist_factory = Gtk.SignalListItemFactory()
-    artist_factory.connect("setup", _setup_artist_column)
-    artist_factory.connect("bind", _bind_artist_column)
-    artist_column = Gtk.ColumnViewColumn(title="Artist", factory=artist_factory)
-    artist_column.set_resizable(True)
-    artist_column.set_fixed_width(150)
-    artist_column.set_expand(True)
-    _create_column_sorter(artist_column, 'artist')
-    column_view.append_column(artist_column)
+    if show_columns.get('artist', True):
+        artist_factory = Gtk.SignalListItemFactory()
+        artist_factory.connect("setup", _setup_artist_column)
+        artist_factory.connect("bind", _bind_artist_column)
+        artist_column = Gtk.ColumnViewColumn(title="Artist", factory=artist_factory)
+        artist_column.set_resizable(True)
+        artist_column.set_fixed_width(150)
+        artist_column.set_expand(True)
+        _create_column_sorter(artist_column, 'artist')
+        column_view.append_column(artist_column)
 
     # album column
-    album_factory = Gtk.SignalListItemFactory()
-    album_factory.connect("setup", _setup_album_column)
-    album_factory.connect("bind", _bind_album_column)
-    album_column = Gtk.ColumnViewColumn(title="Album", factory=album_factory)
-    album_column.set_resizable(True)
-    album_column.set_fixed_width(180)
-    album_column.set_expand(True)
-    _create_column_sorter(album_column, 'album')
-    column_view.append_column(album_column)
+    if show_columns.get('album', True):
+        album_factory = Gtk.SignalListItemFactory()
+        album_factory.connect("setup", _setup_album_column)
+        album_factory.connect("bind", _bind_album_column)
+        album_column = Gtk.ColumnViewColumn(title="Album", factory=album_factory)
+        album_column.set_resizable(True)
+        album_column.set_fixed_width(180)
+        album_column.set_expand(True)
+        _create_column_sorter(album_column, 'album')
+        column_view.append_column(album_column)
 
     # duration column
-    duration_factory = Gtk.SignalListItemFactory()
-    duration_factory.connect("setup", _setup_duration_column)
-    duration_factory.connect("bind", _bind_duration_column)
-    duration_column = Gtk.ColumnViewColumn(title="Duration", factory=duration_factory)
-    duration_column.set_resizable(True)
-    duration_column.set_fixed_width(70)
-    _create_column_sorter(duration_column, 'duration')
-    column_view.append_column(duration_column)
+    if show_columns.get('duration', True):
+        duration_factory = Gtk.SignalListItemFactory()
+        duration_factory.connect("setup", _setup_duration_column)
+        duration_factory.connect("bind", _bind_duration_column)
+        duration_column = Gtk.ColumnViewColumn(title="Duration", factory=duration_factory)
+        duration_column.set_resizable(True)
+        duration_column.set_fixed_width(70)
+        _create_column_sorter(duration_column, 'duration')
+        column_view.append_column(duration_column)
 
     sort_model.set_sorter(column_view.get_sorter())
 

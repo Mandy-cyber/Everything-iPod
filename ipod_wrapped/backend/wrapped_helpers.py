@@ -548,7 +548,8 @@ def fix_and_store_album_art(album_art_storage: str, db_type: str = 'local', db_p
     
 def grab_all_metadata(db_type: str, db_path: str, album_art_dir: str,
                       start_date: Optional[datetime] = None,
-                      end_date: Optional[datetime] = None) -> List[dict]:
+                      end_date: Optional[datetime] = None,
+                      filters: Optional[dict] = None) -> List[dict]:
     """Grabs all metadata about all albums stored in the db
 
     Args:
@@ -557,6 +558,11 @@ def grab_all_metadata(db_type: str, db_path: str, album_art_dir: str,
         album_art_dir (str): The directory where album art is stored
         start_date (Optional[datetime]): Filter plays from this date onwards
         end_date (Optional[datetime]): Filter plays up to this date
+        filters (Optional[dict]): Optional filters for the query. Supported keys:
+            - 'album': Filter by specific album name
+            - 'artist': Filter by specific artist name
+            - 'genre': Filter by specific genre (case-insensitive, partial match)
+            - 'song': Filter by specific song name
 
     Returns:
         List[dict]: Each dict contains:
@@ -586,6 +592,10 @@ def grab_all_metadata(db_type: str, db_path: str, album_art_dir: str,
     # fix truncated album names before fetching metadata
     fix_filenames_in_db(db_type=db_type, db_path=db_path)
 
+    # process filters
+    if filters is None:
+        filters = {}
+
     albums_dict = {}
     songs_metadata = {}  # {(song, artist): {album, genres, song_length_ms}}
 
@@ -595,14 +605,29 @@ def grab_all_metadata(db_type: str, db_path: str, album_art_dir: str,
         song_collection = db.songs
         plays_collection = db.plays
 
+        # build song filter query
+        song_filter = {'album': {'$ne': None}, 'artist': {'$ne': None}}
+        if 'album' in filters and filters['album']:
+            song_filter['album'] = filters['album']
+        if 'artist' in filters and filters['artist']:
+            song_filter['artist'] = filters['artist']
+        if 'song' in filters and filters['song']:
+            song_filter['song'] = filters['song']
+
         # get song metadata
         all_songs = song_collection.find(
-            {'album': {'$ne': None}, 'artist': {'$ne': None}},
+            song_filter,
             projection={'_id': 0, 'song': 1, 'album': 1, 'artist': 1,
                        'genres': 1, 'song_length_ms': 1}
         )
 
         for song_doc in all_songs:
+            # apply genre filter if specified
+            if 'genre' in filters and filters['genre']:
+                genres = song_doc.get('genres', '').lower()
+                if filters['genre'].lower() not in genres:
+                    continue
+
             song_key = (song_doc['song'], song_doc['artist'])
             songs_metadata[song_key] = {
                 'album': song_doc['album'],
@@ -664,14 +689,35 @@ def grab_all_metadata(db_type: str, db_path: str, album_art_dir: str,
         conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
 
+        # build SQL filter query
+        conditions = ['album IS NOT NULL', 'artist IS NOT NULL']
+        params = []
+        if 'album' in filters and filters['album']:
+            conditions.append('album = ?')
+            params.append(filters['album'])
+        if 'artist' in filters and filters['artist']:
+            conditions.append('artist = ?')
+            params.append(filters['artist'])
+        if 'song' in filters and filters['song']:
+            conditions.append('song = ?')
+            params.append(filters['song'])
+
+        where_clause = ' AND '.join(conditions)
+
         # get song metadata
-        cursor.execute('''
+        cursor.execute(f'''
             SELECT song, artist, album, genres, song_length_ms
             FROM songs
-            WHERE album IS NOT NULL AND artist IS NOT NULL
-        ''')
+            WHERE {where_clause}
+        ''', params)
 
         for row in cursor.fetchall():
+            # apply genre filter if specified
+            if 'genre' in filters and filters['genre']:
+                genres = (row[3] or '').lower()
+                if filters['genre'].lower() not in genres:
+                    continue
+
             song_key = (row[0], row[1])
             songs_metadata[song_key] = {
                 'album': row[2],
@@ -762,7 +808,8 @@ def grab_all_metadata(db_type: str, db_path: str, album_art_dir: str,
 
 def create_genre_mappings(db_type: str, db_path: str, album_art_dir: str,
                         start_date: Optional[datetime] = None,
-                        end_date: Optional[datetime] = None) -> List[dict]:
+                        end_date: Optional[datetime] = None,
+                        filters: Optional[dict] = None) -> List[dict]:
     """Creates a mapping of genre to songs (using data in the given db).
 
     Args:
@@ -771,6 +818,11 @@ def create_genre_mappings(db_type: str, db_path: str, album_art_dir: str,
         album_art_dir (str): The location of album covers
         start_date (Optional[datetime]): Filter plays from this date onwards
         end_date (Optional[datetime]): Filter plays up to this date
+        filters (Optional[dict]): Optional filters for the query. Supported keys:
+            - 'album': Filter by specific album name
+            - 'artist': Filter by specific artist name
+            - 'genre': Filter by specific genre (case-insensitive, partial match)
+            - 'song': Filter by specific song name
 
     Returns:
         List[dict]: [
@@ -796,7 +848,11 @@ def create_genre_mappings(db_type: str, db_path: str, album_art_dir: str,
 
     if db_type == 'local' and (not db_path or len(db_path) == 0):
         return []
-    
+
+    # process filters
+    if filters is None:
+        filters = {}
+
     # setup
     mappings = []
     genres = set()
@@ -809,13 +865,28 @@ def create_genre_mappings(db_type: str, db_path: str, album_art_dir: str,
         song_collection = db.songs
         plays_collection = db.plays
 
+        # build song filter query
+        song_filter = {'album': {'$ne': None}, 'artist': {'$ne': None}}
+        if 'album' in filters and filters['album']:
+            song_filter['album'] = filters['album']
+        if 'artist' in filters and filters['artist']:
+            song_filter['artist'] = filters['artist']
+        if 'song' in filters and filters['song']:
+            song_filter['song'] = filters['song']
+
         # get song album + genres
         all_songs = song_collection.find(
-            {'album': {'$ne': None}, 'artist': {'$ne': None}},
+            song_filter,
             projection={'_id': 0, 'song': 1, 'artist': 1, 'album': 1, 'genres': 1}
         )
 
         for song_doc in all_songs:
+            # apply genre filter if specified
+            song_genres = song_doc.get('genres', '')
+            if 'genre' in filters and filters['genre']:
+                if filters['genre'].lower() not in song_genres.lower():
+                    continue
+
             song_key = (song_doc['song'], song_doc['artist'])
             album_art = find_album_art(song_doc['album'], album_art_dir)
             songs_dict[song_key] = {
@@ -824,13 +895,12 @@ def create_genre_mappings(db_type: str, db_path: str, album_art_dir: str,
                 'art_path': album_art,
                 'total_elapsed_ms': 0,  # added later
                 'total_plays': 0,       # added later
-                'genres': song_doc.get('genres', '')
+                'genres': song_genres
             }
 
             # parse out genres
-            grs = song_doc.get('genres', '')
-            if grs:
-                genres.update(grs.split(','))
+            if song_genres:
+                genres.update(song_genres.split(','))
 
         # build date filter for plays
         plays_filter = {}
@@ -906,15 +976,36 @@ def create_genre_mappings(db_type: str, db_path: str, album_art_dir: str,
         # local sqlite
         conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
-        
+
+        # build SQL filter query
+        conditions = ['album IS NOT NULL', 'artist IS NOT NULL']
+        params = []
+        if 'album' in filters and filters['album']:
+            conditions.append('album = ?')
+            params.append(filters['album'])
+        if 'artist' in filters and filters['artist']:
+            conditions.append('artist = ?')
+            params.append(filters['artist'])
+        if 'song' in filters and filters['song']:
+            conditions.append('song = ?')
+            params.append(filters['song'])
+
+        where_clause = ' AND '.join(conditions)
+
         # get song album + genres
-        cursor.execute('''
+        cursor.execute(f'''
             SELECT song, artist, album, genres
             FROM songs
-            WHERE album IS NOT NULL AND artist IS NOT NULL
-        ''')
+            WHERE {where_clause}
+        ''', params)
         
         for row in cursor.fetchall():
+            # apply genre filter if specified
+            song_genres = row[3] or ''
+            if 'genre' in filters and filters['genre']:
+                if filters['genre'].lower() not in song_genres.lower():
+                    continue
+
             # store song info for later
             song_key = (row[0], row[1])
             album_art = find_album_art(row[2], album_art_dir)
@@ -924,12 +1015,12 @@ def create_genre_mappings(db_type: str, db_path: str, album_art_dir: str,
                 'art_path': album_art,
                 'total_elapsed_ms': 0,  # added later
                 'total_plays': 0,       # added later
-                'genres': row[3]
+                'genres': song_genres
             }
-            
+
             # parse out genres
-            grs: str = row[3]
-            genres.update(grs.split(","))
+            if song_genres:
+                genres.update(song_genres.split(","))
             
         # build date filters for plays
         date_filter = ''
@@ -1013,7 +1104,8 @@ def create_genre_mappings(db_type: str, db_path: str, album_art_dir: str,
     
 def grab_all_songs(db_type: str, db_path: str, album_art_dir: str,
                         start_date: Optional[datetime] = None,
-                        end_date: Optional[datetime] = None) -> List[dict]:
+                        end_date: Optional[datetime] = None,
+                        filters: Optional[dict] = None) -> List[dict]:
     """Grabs all songs, and relevant metadata, from the given db.
 
     Args:
@@ -1022,6 +1114,11 @@ def grab_all_songs(db_type: str, db_path: str, album_art_dir: str,
         album_art_dir (str): The location of album covers
         start_date (Optional[datetime]): Filter songs from this date onwards
         end_date (Optional[datetime]): Filter songs up to this date
+        filters (Optional[dict]): Optional filters for the query. Supported keys:
+            - 'album': Filter by specific album name
+            - 'artist': Filter by specific artist name
+            - 'genre': Filter by specific genre (case-insensitive, partial match)
+            - 'song': Filter by specific song name
 
     Returns:
         List[dict]: [
@@ -1046,11 +1143,15 @@ def grab_all_songs(db_type: str, db_path: str, album_art_dir: str,
 
     if db_type == 'local' and (not db_path or len(db_path) == 0):
         return []
-    
+
+    # process filters
+    if filters is None:
+        filters = {}
+
     # setup
     all_songs = []
     songs_dict = {}
-    
+
     # mongo search
     if db_type == 'mongo':
         client = MongoClient(os.getenv('MONGODB_URI'))
@@ -1058,13 +1159,28 @@ def grab_all_songs(db_type: str, db_path: str, album_art_dir: str,
         song_collection = db.songs
         plays_collection = db.plays
 
+        # build song filter query
+        song_filter = {'song': {'$ne': None}, 'artist': {'$ne': None}, 'song_length_ms': {'$ne': None}}
+        if 'album' in filters and filters['album']:
+            song_filter['album'] = filters['album']
+        if 'artist' in filters and filters['artist']:
+            song_filter['artist'] = filters['artist']
+        if 'song' in filters and filters['song']:
+            song_filter['song'] = filters['song']
+
         # get song metadata
         all_songs_cursor = song_collection.find(
-            {'song': {'$ne': None}, 'artist': {'$ne': None}, 'song_length_ms': {'$ne': None}},
+            song_filter,
             projection={'_id': 0, 'song': 1, 'artist': 1, 'album': 1, 'genres': 1, 'song_length_ms': 1}
         )
 
         for song_doc in all_songs_cursor:
+            # apply genre filter if specified
+            song_genres = song_doc.get('genres', '')
+            if 'genre' in filters and filters['genre']:
+                if filters['genre'].lower() not in song_genres.lower():
+                    continue
+
             song_key = (song_doc['song'], song_doc['artist'])
             album_art = find_album_art(song_doc['album'], album_art_dir)
             songs_dict[song_key] = {
@@ -1073,7 +1189,7 @@ def grab_all_songs(db_type: str, db_path: str, album_art_dir: str,
                 'album': song_doc['album'],
                 'duration': song_doc.get('song_length_ms', 0) or 0,
                 'metadata': {
-                    'genres': song_doc.get('genres', ''),
+                    'genres': song_genres,
                     'art_path': album_art,
                     'total_elapsed_ms': 0,  # added later
                     'total_plays': 0,       # added later
@@ -1122,15 +1238,36 @@ def grab_all_songs(db_type: str, db_path: str, album_art_dir: str,
         # local sqlite
         conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
-        
+
+        # build SQL filter query
+        conditions = ['song IS NOT NULL', 'artist IS NOT NULL', 'song_length_ms IS NOT NULL']
+        params = []
+        if 'album' in filters and filters['album']:
+            conditions.append('album = ?')
+            params.append(filters['album'])
+        if 'artist' in filters and filters['artist']:
+            conditions.append('artist = ?')
+            params.append(filters['artist'])
+        if 'song' in filters and filters['song']:
+            conditions.append('song = ?')
+            params.append(filters['song'])
+
+        where_clause = ' AND '.join(conditions)
+
         # get most info
-        cursor.execute('''
+        cursor.execute(f'''
             SELECT song, artist, album, genres, song_length_ms
             FROM songs
-            WHERE song IS NOT NULL AND artist IS NOT NULL AND song_length_ms IS NOT NULL          
-        ''')
+            WHERE {where_clause}
+        ''', params)
         
         for row in cursor.fetchall():
+            # apply genre filter if specified
+            song_genres = row[3] or ''
+            if 'genre' in filters and filters['genre']:
+                if filters['genre'].lower() not in song_genres.lower():
+                    continue
+
             # store for later
             song_key = (row[0], row[1])
             album_art = find_album_art(row[2], album_art_dir)
@@ -1140,7 +1277,7 @@ def grab_all_songs(db_type: str, db_path: str, album_art_dir: str,
                 'album': row[2],
                 'duration': row[4],
                 'metadata': {
-                    'genres': row[3],
+                    'genres': song_genres,
                     'art_path': album_art,
                     'total_elapsed_ms': 0,  # added later
                     'total_plays': 0,       # added later

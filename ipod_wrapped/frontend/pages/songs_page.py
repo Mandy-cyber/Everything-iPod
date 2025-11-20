@@ -7,7 +7,6 @@ from ..widgets.songs_table import create_song_store, create_song_selection_model
 from ..widgets.song_info import display_song_info
 
 # TODO: fix 'sorter' not bringing user back to top of table.
-# TODO: fix auto-select first song on init
 # TODO: fix wonky resizing
 
 class SongsPage(Gtk.Box):
@@ -33,7 +32,7 @@ class SongsPage(Gtk.Box):
         self.song_info_box.set_visible(False)
         self.append(self.song_info_box)
 
-        # setup store + table
+        # setup store + models
         self.store: Gio.ListStore = create_song_store()
         self.selection, self.sort_model = create_song_selection_model(self.store)
 
@@ -45,6 +44,7 @@ class SongsPage(Gtk.Box):
         )
         self.scrolled_window.set_vexpand(True)
 
+        # create table
         self.songs_table: Gtk.ColumnView = create_songs_table(
             self.selection,
             self.sort_model,
@@ -84,13 +84,20 @@ class SongsPage(Gtk.Box):
                 )
                 self.store.append(song_obj)
 
-            # select first song
+            # auto-select first song
             if len(songs) > 0:
-                GLib.idle_add(lambda: self.selection.set_selected(0))
-    
-    def _on_selection_changed(self, selection: Gtk.SingleSelection, position: int, n_items: int):
-        """Handle selection change in the table"""
-        selected = selection.get_selected_item()
+                GLib.idle_add(self._select_first_song)
+
+    def _select_first_song(self):
+        """Selects the first song in the table and retriggers display"""
+        if self.store.get_n_items() > 0:
+            self.selection.set_selected(0)
+            self._update_song_display()
+        return False
+
+    def _update_song_display(self):
+        """Update the song info display based on current selection"""
+        selected = self.selection.get_selected_item()
         if selected is None:
             # no selection, hide song info
             self.song_info_box.set_visible(False)
@@ -98,7 +105,7 @@ class SongsPage(Gtk.Box):
             return
 
         # get position
-        selected_pos = selection.get_selected()
+        selected_pos = self.selection.get_selected()
 
         # find song data
         song_data = None
@@ -121,6 +128,10 @@ class SongsPage(Gtk.Box):
             song_info_widget = display_song_info(song_data)
             self.song_info_box.append(song_info_widget)
             self.song_info_box.set_visible(True)
+
+    def _on_selection_changed(self, selection: Gtk.SingleSelection, position: int, n_items: int):
+        """Handle selection change in the table"""
+        self._update_song_display()
 
     def _scroll_to_top(self):
         """Scroll to the top of the table"""
