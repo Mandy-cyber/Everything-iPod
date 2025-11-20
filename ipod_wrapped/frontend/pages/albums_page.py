@@ -1,16 +1,17 @@
 import gi
 gi.require_version('Gtk', '4.0')
-from gi.repository import Gtk, GLib
+gi.require_version('Adw', '1')
+from gi.repository import Gtk, GLib, Adw
 
 from backend import grab_all_metadata, has_data
 from ..widgets.album_button import create_album_button
 
 
-class AlbumsPage(Gtk.ScrolledWindow):
+class AlbumsPage(Gtk.Box):
     """Page displaying album grid"""
 
     def __init__(self, db_type: str, db_path: str, album_art_dir: str, toggle_bottom_bar_callback=None):
-        super().__init__()
+        super().__init__(orientation=Gtk.Orientation.VERTICAL)
 
         # setup
         self.IMAGE_SIZE = 120
@@ -19,12 +20,19 @@ class AlbumsPage(Gtk.ScrolledWindow):
         self.db_path = db_path
         self.album_art_dir = album_art_dir
 
+        # create navigation view
+        self.nav_view = Adw.NavigationView()
+        self.nav_view.set_vexpand(True)
+        self.nav_view.set_hexpand(True)
+        self.append(self.nav_view)
+
         # setup scrollable window
-        self.set_policy(
+        scrolled_window = Gtk.ScrolledWindow()
+        scrolled_window.set_policy(
             Gtk.PolicyType.NEVER,
             Gtk.PolicyType.AUTOMATIC
         )
-        self.add_css_class('page-area')
+        scrolled_window.add_css_class('page-area')
 
         # setup flowbox for responsive layout
         self.flowbox = Gtk.FlowBox()
@@ -35,7 +43,15 @@ class AlbumsPage(Gtk.ScrolledWindow):
         self.flowbox.set_column_spacing(0)
         self.flowbox.set_row_spacing(0)
         self.flowbox.set_homogeneous(True)
-        self.set_child(self.flowbox)
+        scrolled_window.set_child(self.flowbox)
+
+        # create root navigation page
+        root_page = Adw.NavigationPage()
+        root_page.set_title("Albums")
+        root_page.set_child(scrolled_window)
+
+        # push root page
+        self.nav_view.push(root_page)
 
         # load albums
         self._load_albums()
@@ -58,7 +74,7 @@ class AlbumsPage(Gtk.ScrolledWindow):
             self.albums = albums
             # populate with album buttons
             for album in albums:
-                button = create_album_button(album, self.IMAGE_SIZE)
+                button = create_album_button(self.db_type, self.db_path, self.album_art_dir, album, self.nav_view, self.IMAGE_SIZE)
                 self.flowbox.append(button)
 
     def refresh(self):

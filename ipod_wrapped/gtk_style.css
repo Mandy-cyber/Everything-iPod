@@ -153,11 +153,9 @@ columnview row:selected:hover {
 }
 .song-page-stats-label{}
 
-/* columnview > header {
-    border-bottom: none;
-    box-shadow: none;
-} */
-
+.album-pg-song-info-container{
+    margin-top: 30px;
+}
 
 /* HEADER BAR & VIEW SWITCHER */
 headerbar {
@@ -222,14 +220,14 @@ headerbar viewswitcher label {
 
 /* START WRAPPED */
 .start-wrapped-box {
-    padding: 20px;
+    padding: 5px;
 }
 
 .start-wrapped-title {
     font-weight: 500;
     font-size: 18px;
     margin-top: 20px;
-    margin-bottom: 10px;
+    margin-bottom: 5px;
 }
 
 .start-wrapped-subtitle {
@@ -237,10 +235,10 @@ headerbar viewswitcher label {
     font-size: 14px;
 }
 
-.start-wrapped-explainer { /* TODO: come back and figure out how to center this */
+.start-wrapped-explainer {
     font-weight: 200;
     font-size: 11px; 
-    margin: 20px 100px 0px 100px;
+    margin: 10px 100px 0px 100px;
 }
 
 .start-wrapped-spinner {
@@ -248,7 +246,8 @@ headerbar viewswitcher label {
 }
 
 .start-wrapped-btn {
-    margin-top: 20px;
+    margin-top: 15px;
+    margin-bottom: 15px;
 }
 
 /* NAV MENU */
