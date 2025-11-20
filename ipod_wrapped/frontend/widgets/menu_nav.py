@@ -1,7 +1,7 @@
 import gi
 gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
-from gi.repository import Gtk, Adw
+from gi.repository import Gtk, Adw, GLib
 
 from .sync_box import create_sync_box_widgets
 
@@ -12,7 +12,7 @@ def create_menu_nav(overlay: Gtk.Overlay, window: Gtk.ApplicationWindow,
     - About
     - Start Wrapped
     - _______
-    
+
     Returns:
         Gtk.Button: The floating nav button
     """
@@ -22,14 +22,12 @@ def create_menu_nav(overlay: Gtk.Overlay, window: Gtk.ApplicationWindow,
     menu_btn.add_css_class('flat')
     menu_btn.add_css_class('circular')
     menu_btn.add_css_class('nav-menu-icon')
-    
+    menu_btn.set_can_focus(False)
     menu_btn.set_halign(Gtk.Align.END)
     menu_btn.set_valign(Gtk.Align.END)
     menu_btn.set_margin_end(10)
     menu_btn.set_margin_bottom(10)
-    
-    menu_btn.set_can_focus(False)
-    
+
     # extended nav
     extended = _create_extended_menu_nav(window, error_banner, success_banner, refresh_callback)
     extended.set_reveal_child(False)
@@ -46,10 +44,11 @@ def _create_extended_menu_nav(window: Gtk.ApplicationWindow,
     revealer = Gtk.Revealer()
     revealer.set_transition_type(Gtk.RevealerTransitionType.SLIDE_LEFT)
     revealer.set_transition_duration(100)
+    revealer.set_visible(False)
+    revealer.set_halign(Gtk.Align.END)
+    revealer.set_valign(Gtk.Align.END)
 
     btn_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=7)
-    btn_box.set_halign(Gtk.Align.END)
-    btn_box.set_valign(Gtk.Align.END)
     btn_box.set_margin_end(10)
     btn_box.set_margin_bottom(50)
 
@@ -62,7 +61,7 @@ def _create_extended_menu_nav(window: Gtk.ApplicationWindow,
     start_btn.add_css_class('circular')
     start_btn.add_css_class('nav-start-icon')
     start_btn.set_can_focus(False)
-    start_btn.connect('clicked', lambda btn: _open_start_wrapped_dialogue(window, error_banner, success_banner, refresh_callback))
+    start_btn.connect('clicked', lambda btn: _open_start_wrapped_dialogue(window, error_banner, success_banner, refresh_callback, revealer))
     btn_box.append(start_btn)
 
     # about button
@@ -72,7 +71,7 @@ def _create_extended_menu_nav(window: Gtk.ApplicationWindow,
     about_btn.add_css_class('circular')
     about_btn.add_css_class('nav-about-icon')
     about_btn.set_can_focus(False)
-    about_btn.connect('clicked', lambda btn: _open_about_dialogue(window))
+    about_btn.connect('clicked', lambda btn: _open_about_dialogue(window, revealer))
     btn_box.append(about_btn)
 
     return revealer
@@ -80,10 +79,21 @@ def _create_extended_menu_nav(window: Gtk.ApplicationWindow,
 
 def _open_menu_nav(revealer: Gtk.Revealer) -> None:
     """Reveals the other floating navs"""
-    revealer.set_reveal_child(not revealer.get_reveal_child())
+    is_revealed = revealer.get_reveal_child()
+    if is_revealed:
+        # make invisible so it doesn't block clicks
+        revealer.set_reveal_child(False)
+        GLib.timeout_add(revealer.get_transition_duration(), lambda: revealer.set_visible(False) or False)
+    else:
+        # show first, then reveal
+        revealer.set_visible(True)
+        revealer.set_reveal_child(True)
     
-def _open_about_dialogue(window: Gtk.ApplicationWindow):
+def _open_about_dialogue(window: Gtk.ApplicationWindow, revealer: Gtk.Revealer):
     """Opens the 'About' dialogue"""
+    # close menu first
+    _open_menu_nav(revealer)
+
     # TODO: come back
     about_dialog = Adw.AboutDialog()
     # about_dialog.set_transient_for(window)
@@ -97,12 +107,15 @@ def _open_about_dialogue(window: Gtk.ApplicationWindow):
     # about_dialog.set_website_label("Source Code")
     about_dialog.set_license_type(Gtk.License.GPL_3_0)
 
-    about_dialog.present()
+    about_dialog.present(window)
 
 def _open_start_wrapped_dialogue(window: Gtk.ApplicationWindow,
                                  error_banner: Adw.Banner, success_banner: Adw.Banner,
-                                 refresh_callback):
+                                 refresh_callback, revealer: Gtk.Revealer):
     """Opens the 'Start iPod Wrapped' dialogue"""
+    # close menu first
+    _open_menu_nav(revealer)
+
     # create dialog
     dialog = Adw.Dialog()
     dialog.set_title("iPod Wrapped")
