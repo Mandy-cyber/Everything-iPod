@@ -56,7 +56,7 @@ class AlbumsPage(Gtk.Box):
         # load albums
         self._load_albums()
 
-    def _load_albums(self):
+    def _load_albums(self) -> None:
         """Load and display albums from database"""
         # check if data exists in database
         albums = []
@@ -77,7 +77,7 @@ class AlbumsPage(Gtk.Box):
                 button = create_album_button(self.db_type, self.db_path, self.album_art_dir, album, self.nav_view, self.IMAGE_SIZE)
                 self.flowbox.append(button)
 
-    def refresh(self):
+    def refresh(self) -> None:
         """Refresh the page by reloading albums from database"""
         # clear existing album buttons
         while True:

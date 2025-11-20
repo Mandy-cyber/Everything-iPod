@@ -59,7 +59,7 @@ class SongsPage(Gtk.Box):
         # load songs
         self._load_songs()
     
-    def _load_songs(self):
+    def _load_songs(self) -> None:
         """Load songs into the songs store"""
         songs = []
         if has_data(self.db_type, self.db_path):
@@ -88,14 +88,14 @@ class SongsPage(Gtk.Box):
             if len(songs) > 0:
                 GLib.idle_add(self._select_first_song)
 
-    def _select_first_song(self):
+    def _select_first_song(self) -> bool:
         """Selects the first song in the table and retriggers display"""
         if self.store.get_n_items() > 0:
             self.selection.set_selected(0)
             self._update_song_display()
         return False
 
-    def _update_song_display(self):
+    def _update_song_display(self) -> None:
         """Update the song info display based on current selection"""
         selected = self.selection.get_selected_item()
         if selected is None:
@@ -109,13 +109,14 @@ class SongsPage(Gtk.Box):
 
         # find song data
         song_data = None
-        for song in self.songs:
-            if (song['title'] == selected.title and
-                song['artist'] == selected.artist and
-                song['album'] == selected.album):
-                song_data = song
-                self.selected_song_index = selected_pos
-                break
+        if isinstance(selected, Song):
+            for song in self.songs:
+                if (song['title'] == selected.title and
+                    song['artist'] == selected.artist and
+                    song['album'] == selected.album):
+                    song_data = song
+                    self.selected_song_index = selected_pos
+                    break
 
         if song_data:
             # clear box
@@ -129,17 +130,17 @@ class SongsPage(Gtk.Box):
             self.song_info_box.append(song_info_widget)
             self.song_info_box.set_visible(True)
 
-    def _on_selection_changed(self, selection: Gtk.SingleSelection, position: int, n_items: int):
+    def _on_selection_changed(self, selection: Gtk.SingleSelection, position: int, n_items: int) -> None:
         """Handle selection change in the table"""
         self._update_song_display()
 
-    def _scroll_to_top(self):
+    def _scroll_to_top(self) -> None:
         """Scroll to the top of the table"""
         vadj = self.scrolled_window.get_vadjustment()
         if vadj:
             vadj.set_value(0)
 
-    def refresh(self):
+    def refresh(self) -> None:
         """Refresh the page by reloading songs from database"""
         self.store.remove_all()
         self.song_info_box.set_visible(False)

@@ -88,7 +88,7 @@ class GenresPage(Gtk.ScrolledWindow):
             if first_tag:
                 first_tag.emit('clicked')
                 
-    def refresh(self):
+    def refresh(self) -> None:
         """Refresh the page by reloading genres from database"""
         # clear existing genre tags
         while True:

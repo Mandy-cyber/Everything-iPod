@@ -1,13 +1,14 @@
 import gi
 gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
+from typing import Optional, Callable
 from gi.repository import Gtk, Adw, GLib
 
 from .sync_box import create_sync_box_widgets
 
 def create_menu_nav(overlay: Gtk.Overlay, window: Gtk.ApplicationWindow,
-                    error_banner: Adw.Banner = None, success_banner: Adw.Banner = None,
-                    refresh_callback = None) -> Gtk.Button:
+                    error_banner: Optional[Adw.Banner] = None, success_banner: Optional[Adw.Banner] = None,
+                    refresh_callback: Optional[Callable] = None) -> Gtk.Button:
     """Creates a floating nav icon/button to show:
     - About
     - Start Wrapped
@@ -37,8 +38,8 @@ def create_menu_nav(overlay: Gtk.Overlay, window: Gtk.ApplicationWindow,
     return menu_btn
     
 def _create_extended_menu_nav(window: Gtk.ApplicationWindow,
-                              error_banner: Adw.Banner, success_banner: Adw.Banner,
-                              refresh_callback) -> Gtk.Revealer:
+                              error_banner: Optional[Adw.Banner], success_banner: Optional[Adw.Banner],
+                              refresh_callback: Optional[Callable]) -> Gtk.Revealer:
     """Creates the menu nav, showing icons for other pages/overlays"""
     # setup
     revealer = Gtk.Revealer()
@@ -89,7 +90,7 @@ def _open_menu_nav(revealer: Gtk.Revealer) -> None:
         revealer.set_visible(True)
         revealer.set_reveal_child(True)
     
-def _open_about_dialogue(window: Gtk.ApplicationWindow, revealer: Gtk.Revealer):
+def _open_about_dialogue(window: Gtk.ApplicationWindow, revealer: Gtk.Revealer) -> None:
     """Opens the 'About' dialogue"""
     # close menu first
     _open_menu_nav(revealer)
@@ -106,8 +107,8 @@ def _open_about_dialogue(window: Gtk.ApplicationWindow, revealer: Gtk.Revealer):
     about_dialog.present(window)
 
 def _open_start_wrapped_dialogue(window: Gtk.ApplicationWindow,
-                                 error_banner: Adw.Banner, success_banner: Adw.Banner,
-                                 refresh_callback, revealer: Gtk.Revealer):
+                                 error_banner: Optional[Adw.Banner], success_banner: Optional[Adw.Banner],
+                                 refresh_callback: Optional[Callable], revealer: Gtk.Revealer) -> None:
     """Opens the 'Start iPod Wrapped' dialogue"""
     # close menu first
     _open_menu_nav(revealer)

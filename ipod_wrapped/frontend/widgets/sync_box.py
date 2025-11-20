@@ -1,3 +1,4 @@
+from typing import Optional, Callable, List
 import gi
 gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
@@ -6,7 +7,7 @@ from backend import LogAnalyser
 from .banner import show_banner, hide_banner
 import threading
 
-def create_sync_box_widgets(error_banner: Adw.Banner, success_banner: Adw.Banner, refresh_callback) -> list:
+def create_sync_box_widgets(error_banner: Optional[Adw.Banner], success_banner: Optional[Adw.Banner], refresh_callback: Optional[Callable]) -> List[Gtk.Widget]:
     """Creates the widgets that go on the 'Start Wrapped'
     page/expanded view.
 
@@ -56,7 +57,7 @@ def create_sync_box_widgets(error_banner: Adw.Banner, success_banner: Adw.Banner
     return widgets
 
 def start_wrapped(button: Gtk.Button, spinner: Gtk.Spinner,
-                  error_banner: Adw.Banner, success_banner: Adw.Banner, refresh_callback) -> None:
+                  error_banner: Optional[Adw.Banner], success_banner: Optional[Adw.Banner], refresh_callback: Optional[Callable]) -> None:
     """Starts the log analyser
 
     Args:
@@ -67,8 +68,10 @@ def start_wrapped(button: Gtk.Button, spinner: Gtk.Spinner,
         refresh_callback: Function to call to refresh all pages after sync
     """
     # hide any prev. banners
-    hide_banner(error_banner)
-    hide_banner(success_banner)
+    if error_banner:
+        hide_banner(error_banner)
+    if success_banner:
+        hide_banner(success_banner)
 
     # show loading icon + disable button
     button.set_sensitive(False)
@@ -90,8 +93,8 @@ def start_wrapped(button: Gtk.Button, spinner: Gtk.Spinner,
     thread.start()
 
 def analysis_complete(result: dict, button: Gtk.Button,
-                     spinner: Gtk.Spinner, error_banner: Adw.Banner,
-                     success_banner: Adw.Banner, refresh_callback) -> bool:
+                     spinner: Gtk.Spinner, error_banner: Optional[Adw.Banner],
+                     success_banner: Optional[Adw.Banner], refresh_callback: Optional[Callable]) -> bool:
     """Called when analysis is complete to update UI
 
     Args:
@@ -111,9 +114,11 @@ def analysis_complete(result: dict, button: Gtk.Button,
     button.set_sensitive(True)
 
     if "error" in result:
-        show_banner(error_banner, result["error"])
+        if error_banner:
+            show_banner(error_banner, result["error"])
     else:
-        show_banner(success_banner, result["success"])
+        if success_banner:
+            show_banner(success_banner, result["success"])
         # refresh all pages to show new data
         if refresh_callback:
             refresh_callback()

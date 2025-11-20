@@ -6,4 +6,3 @@ pymongo
 Pillow
 mutagen
 typer
-sqlite3

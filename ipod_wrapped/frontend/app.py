@@ -9,8 +9,6 @@ from .widgets.bottom_bar import create_bottom_bar
 from .widgets.banner import create_banner
 from .widgets.menu_nav import create_menu_nav
 
-# TODO: add 'About Dialogue' (check adw widget gallery)
-
 class MainWindow(Adw.ApplicationWindow):
     """Main application window with navigation"""
     def __init__(self, app, db_type="local", db_path="storage/ipod_wrapped.db", album_art_dir="storage/album-art"):
@@ -20,11 +18,12 @@ class MainWindow(Adw.ApplicationWindow):
         css_provider = Gtk.CssProvider()
         css_provider.load_from_path("gtk_style.css")
         display = Gdk.Display.get_default()
-        Gtk.StyleContext.add_provider_for_display(
-            display,
-            css_provider,
-            Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
-        )
+        if display is not None:
+            Gtk.StyleContext.add_provider_for_display(
+                display,
+                css_provider,
+                Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+            )
         
         # window params
         self.set_default_size(650, 500)
@@ -99,7 +98,7 @@ class MainWindow(Adw.ApplicationWindow):
         main_box.append(self.success_banner)
             
     
-    def refresh_all_pages(self):
+    def refresh_all_pages(self) -> None:
         """Refresh all pages after data has been updated"""
         # refresh albums page
         if hasattr(self.albums_page, 'refresh'):
@@ -111,9 +110,9 @@ class MainWindow(Adw.ApplicationWindow):
 
         # refresh wrapped page
         if hasattr(self.wrapped_page, 'refresh'):
-            self.wrapped_page.refresh()
+            self.wrapped_page.refresh()  # type: ignore
 
-    def toggle_bottom_bar(self):
+    def toggle_bottom_bar(self) -> None:
         """Toggle between collapsed and expanded bottom bar"""
         self.bottom_bar_expanded = not self.bottom_bar_expanded
 

@@ -1,3 +1,4 @@
+from typing import Optional, Any
 import gi
 gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
@@ -30,7 +31,7 @@ def create_banner(message: str, banner_type: str = "info") -> Adw.Banner:
     return banner
 
 
-def show_banner(banner: Adw.Banner, message: str = None, auto_dismiss: bool = True) -> None:
+def show_banner(banner: Adw.Banner, message: Optional[str] = None, auto_dismiss: bool = True) -> None:
     """Shows the banner with an optional new message
 
     Args:
@@ -44,10 +45,11 @@ def show_banner(banner: Adw.Banner, message: str = None, auto_dismiss: bool = Tr
 
     # auto-dismiss after 5 seconds (logic from claude)
     if auto_dismiss:
-        if hasattr(banner, '_timeout_id') and banner._timeout_id:
-            GLib.source_remove(banner._timeout_id)
+        timeout_id: Any = getattr(banner, '_timeout_id', None)
+        if timeout_id:
+            GLib.source_remove(timeout_id)
 
-        banner._timeout_id = GLib.timeout_add_seconds(5, lambda: _auto_hide_banner(banner))
+        setattr(banner, '_timeout_id', GLib.timeout_add_seconds(5, lambda: _auto_hide_banner(banner)))
 
 
 def hide_banner(banner: Adw.Banner) -> None:
@@ -57,9 +59,10 @@ def hide_banner(banner: Adw.Banner) -> None:
         banner (Adw.Banner): The banner to hide
     """
     # cancel any pending auto-dismiss timeout (logic from claude)
-    if hasattr(banner, '_timeout_id') and banner._timeout_id:
-        GLib.source_remove(banner._timeout_id)
-        banner._timeout_id = None
+    timeout_id: Any = getattr(banner, '_timeout_id', None)
+    if timeout_id:
+        GLib.source_remove(timeout_id)
+        setattr(banner, '_timeout_id', None)
 
     banner.set_revealed(False)
 
@@ -75,5 +78,5 @@ def _auto_hide_banner(banner: Adw.Banner) -> bool:
     """
     # (logic from claude)
     banner.set_revealed(False)
-    banner._timeout_id = None
+    setattr(banner, '_timeout_id', None)
     return False

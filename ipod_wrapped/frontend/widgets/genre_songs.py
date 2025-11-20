@@ -1,10 +1,10 @@
-from typing import List
+from typing import List, Optional, Callable
 import gi
 import random
 gi.require_version('Gtk', '4.0')
 from gi.repository import Gtk
 
-def display_genre_songs(genre_info: dict, content_box: Gtk.Box, play_song_callback=None) -> Gtk.Box:
+def display_genre_songs(genre_info: dict, content_box: Gtk.Box, play_song_callback: Optional[Callable] = None) -> Gtk.Box:
     """Displays the genre's songs and basic stats
 
     Args:
@@ -120,7 +120,7 @@ def display_genre_songs(genre_info: dict, content_box: Gtk.Box, play_song_callba
 
     return content_box
 
-def create_song_listing(song_info: dict, play_song_callback=None) -> Gtk.Box:
+def create_song_listing(song_info: dict, play_song_callback: Optional[Callable] = None) -> Gtk.Box:
     song, artist, art_path = song_info.values()
     
     # listing box

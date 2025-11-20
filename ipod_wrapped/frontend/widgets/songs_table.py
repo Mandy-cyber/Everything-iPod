@@ -16,16 +16,16 @@ class Song(GObject.Object):
     duration = GObject.Property(type=str, default='')
     
     def __init__(
-        self, title: Optional[str] = None, artist: Optional[str] = None, 
+        self, title: Optional[str] = None, artist: Optional[str] = None,
         album: Optional[str] = None, duration: Optional[str] = None
         ) -> None:
         """Initialize with song data"""
         super().__init__()
         self.is_playing = False
-        self.title = title
-        self.artist = artist
-        self.album = album
-        self.duration = duration
+        self.title = title if title is not None else ''
+        self.artist = artist if artist is not None else ''
+        self.album = album if album is not None else ''
+        self.duration = duration if duration is not None else ''
 
 def create_song_store() -> Gio.ListStore:
     """Creates a list store for songs."""
@@ -58,14 +58,17 @@ def _setup_title_column(factory: Gtk.SignalListItemFactory, list_item: Gtk.ListI
 def _bind_title_column(factory: Gtk.SignalListItemFactory, list_item: Gtk.ListItem) -> None:
     """Bind callback for title column."""
     box = list_item.get_child()
-    song_obj: Song = list_item.get_item()
-    
-    play_icon: Gtk.Label = box.get_first_child()
-    play_icon_content = "▶" if song_obj.is_playing else ""
-    play_icon.set_label(play_icon_content)
-    
-    title_label: Gtk.Label = box.get_last_child()
-    title_label.set_label(song_obj.title)
+    song_obj = list_item.get_item()
+
+    if box is not None and song_obj is not None:
+        play_icon = box.get_first_child()
+        if isinstance(song_obj, Song) and isinstance(play_icon, Gtk.Label):
+            play_icon_content = "▶" if song_obj.is_playing else ""
+            play_icon.set_label(play_icon_content)
+
+        title_label = box.get_last_child()
+        if isinstance(song_obj, Song) and isinstance(title_label, Gtk.Label):
+            title_label.set_label(song_obj.title)
 
 def _setup_artist_column(factory: Gtk.SignalListItemFactory, list_item: Gtk.ListItem) -> None:
     """ Setup callback for artist column."""
@@ -74,9 +77,10 @@ def _setup_artist_column(factory: Gtk.SignalListItemFactory, list_item: Gtk.List
 
 def _bind_artist_column(factory: Gtk.SignalListItemFactory, list_item: Gtk.ListItem) -> None:
     """Bind callback for artist column."""
-    song_obj: Song = list_item.get_item()
-    artist_label: Gtk.Label = list_item.get_child()
-    artist_label.set_label(song_obj.artist)
+    song_obj = list_item.get_item()
+    artist_label = list_item.get_child()
+    if isinstance(song_obj, Song) and isinstance(artist_label, Gtk.Label):
+        artist_label.set_label(song_obj.artist)
 
 def _setup_album_column(factory: Gtk.SignalListItemFactory, list_item: Gtk.ListItem) -> None:
     """Setup callback for album column."""
@@ -85,9 +89,10 @@ def _setup_album_column(factory: Gtk.SignalListItemFactory, list_item: Gtk.ListI
 
 def _bind_album_column(factory: Gtk.SignalListItemFactory, list_item: Gtk.ListItem) -> None:
     """Bind callback for album column."""
-    song_obj: Song = list_item.get_item()
-    album_label: Gtk.Label = list_item.get_child()
-    album_label.set_label(song_obj.album)
+    song_obj = list_item.get_item()
+    album_label = list_item.get_child()
+    if isinstance(song_obj, Song) and isinstance(album_label, Gtk.Label):
+        album_label.set_label(song_obj.album)
 
 def _setup_duration_column(factory: Gtk.SignalListItemFactory, list_item: Gtk.ListItem) -> None:
     """ Setup callback for duration column."""
@@ -96,22 +101,23 @@ def _setup_duration_column(factory: Gtk.SignalListItemFactory, list_item: Gtk.Li
 
 def _bind_duration_column(factory: Gtk.SignalListItemFactory, list_item: Gtk.ListItem) -> None:
     """Bind callback for duration column."""
-    song_obj: Song = list_item.get_item()
-    duration_label: Gtk.Label = list_item.get_child()
-    duration_label.set_label(song_obj.duration)
+    song_obj = list_item.get_item()
+    duration_label = list_item.get_child()
+    if isinstance(song_obj, Song) and isinstance(duration_label, Gtk.Label):
+        duration_label.set_label(song_obj.duration)
 
-def _create_column_sorter(column: Gtk.ColumnViewColumn, prop_name: str):
+def _create_column_sorter(column: Gtk.ColumnViewColumn, prop_name: str) -> None:
     """Creates a sorter for the given column"""
     # create expression
     prop_exp = Gtk.PropertyExpression.new(Song, None, prop_name)
-    
+
     # create sorter
-    property_type = Song.find_property(prop_name).value_type.fundamental
+    property_type = Song.find_property(prop_name).value_type.fundamental  # type: ignore
     if property_type == GObject.TYPE_STRING:
         sorter = Gtk.StringSorter.new(prop_exp)
     elif property_type == GObject.TYPE_BOOLEAN:
         sorter = Gtk.NumericSorter.new(prop_exp)
-    
+
     # set the sorter on the column
     column.set_sorter(sorter)
 
