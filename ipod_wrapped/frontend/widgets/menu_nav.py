@@ -94,19 +94,15 @@ def _open_about_dialogue(window: Gtk.ApplicationWindow, revealer: Gtk.Revealer):
     # close menu first
     _open_menu_nav(revealer)
 
-    # TODO: come back
+    # create dialogue
     about_dialog = Adw.AboutDialog()
-    # about_dialog.set_transient_for(window)
-    # about_dialog.set_modal(True)
-
-    # about_dialog.set_program_name("iPod Wrapped")
+    about_dialog.set_application_name("iPod Wrapped")
+    about_dialog.set_developer_name("Mandy-cyber")
+    about_dialog.set_issue_url("https://github.com/Mandy-cyber/Everything-iPod/issues")
     about_dialog.set_version("1.0.0")
     about_dialog.set_comments("An all-in-one tool to view your iPod library, listening history, and 'iPod Wrapped' statistics")
-    # about_dialog.set_authors(["Mandy-cyber"])
     about_dialog.set_website("https://github.com/Mandy-cyber/Everything-iPod")
-    # about_dialog.set_website_label("Source Code")
     about_dialog.set_license_type(Gtk.License.GPL_3_0)
-
     about_dialog.present(window)
 
 def _open_start_wrapped_dialogue(window: Gtk.ApplicationWindow,
@@ -116,9 +112,9 @@ def _open_start_wrapped_dialogue(window: Gtk.ApplicationWindow,
     # close menu first
     _open_menu_nav(revealer)
 
-    # create dialog
+    # create dialogue
     dialog = Adw.Dialog()
-    dialog.set_title("iPod Wrapped")
+    dialog.set_title("Get Started")
 
     # create content box
     content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=20)
@@ -135,10 +131,12 @@ def _open_start_wrapped_dialogue(window: Gtk.ApplicationWindow,
     for widget in widgets:
         content.append(widget)
 
-    # create toolbar view + add content
+    # toolbar w/headerbar
     toolbar_view = Adw.ToolbarView()
     toolbar_view.set_content(content)
-    toolbar_view.set_top_bar_style(Adw.ToolbarStyle.FLAT)
+    header_bar = Adw.HeaderBar()
+
+    toolbar_view.add_top_bar(header_bar)
 
     dialog.set_child(toolbar_view)
     dialog.present(window)
