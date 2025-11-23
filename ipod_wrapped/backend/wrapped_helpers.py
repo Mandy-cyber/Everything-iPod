@@ -1334,28 +1334,297 @@ def grab_all_songs(db_type: str, db_path: str, album_art_dir: str,
 
 
 
-# def find_song_file(song_name: str, artist: str, music_dir: str) -> Optional[str]:
-#     """Find the file path for a song by searching the music directory
+def load_stats_from_db(db_type: str, db_path: str,
+                       start_date: Optional[datetime] = None,
+                       end_date: Optional[datetime] = None) -> List[dict]:
+    """Loads song statistics aggregated from plays table
 
-#     Args:
-#         song_name (str): Name of the song
-#         artist (str): Artist name
-#         music_dir (str): Root music directory to search
+    Args:
+        db_type (str): Type of database ('mongo' or 'local')
+        db_path (str): Path to local db file
+        start_date (Optional[datetime]): Filter plays from this date onwards
+        end_date (Optional[datetime]): Filter plays up to this date
 
-#     Returns:
-#         Optional[str]: Full path to the song file, or None if not found
-#     """
-#     pass
+    Returns:
+        List[dict]: List of dicts with keys: song, artist, album, genres, total_plays,
+                   song_length_ms, total_elapsed_ms
+    """
+    if db_type == 'mongo':
+        client = MongoClient(os.getenv('MONGODB_URI'))
+        db = client.song_db
+        song_collection = db.songs
+        plays_collection = db.plays
+
+        # build date filter for plays
+        plays_filter = {}
+        if start_date or end_date:
+            plays_filter['timestamp'] = {}
+            if start_date:
+                plays_filter['timestamp']['$gte'] = start_date
+            if end_date:
+                plays_filter['timestamp']['$lte'] = end_date
+
+        # aggregate from plays collection
+        pipeline = [
+            {'$match': plays_filter} if plays_filter else {'$match': {}},
+            {'$group': {
+                '_id': {'song': '$song', 'artist': '$artist'},
+                'total_plays': {'$sum': 1},
+                'total_elapsed_ms': {'$sum': '$elapsed_ms'}
+            }}
+        ]
+        play_stats = list(plays_collection.aggregate(pipeline))
+
+        # get song metadata
+        all_songs = list(song_collection.find({}, projection={'_id': 0}))
+        songs_metadata = {(s['song'], s['artist']): s for s in all_songs}
+
+        # combine stats with metadata
+        all_docs = []
+        for stat in play_stats:
+            song_key = (stat['_id']['song'], stat['_id']['artist'])
+            if song_key in songs_metadata:
+                metadata = songs_metadata[song_key]
+                all_docs.append({
+                    'song': stat['_id']['song'],
+                    'artist': stat['_id']['artist'],
+                    'album': metadata.get('album', ''),
+                    'genres': metadata.get('genres', ''),
+                    'total_plays': stat['total_plays'],
+                    'song_length_ms': metadata.get('song_length_ms', 0) or 0,
+                    'total_elapsed_ms': stat['total_elapsed_ms']
+                })
+    else:
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+
+        # build date filter for plays
+        date_filter = ''
+        params = []
+        if start_date or end_date:
+            conditions = []
+            if start_date:
+                conditions.append('p.timestamp >= ?')
+                params.append(start_date.isoformat())
+            if end_date:
+                conditions.append('p.timestamp <= ?')
+                params.append(end_date.isoformat())
+            date_filter = 'WHERE ' + ' AND '.join(conditions)
+
+        # aggregate from plays table
+        query = f'''
+            SELECT
+                s.song,
+                s.artist,
+                s.album,
+                s.genres,
+                COUNT(p.id) as total_plays,
+                s.song_length_ms,
+                SUM(p.elapsed_ms) as total_elapsed_ms
+            FROM songs s
+            LEFT JOIN plays p ON s.song = p.song AND s.artist = p.artist
+            {date_filter}
+            GROUP BY s.song, s.artist
+        '''
+        cursor.execute(query, params)
+        rows = cursor.fetchall()
+        all_docs = [
+            {
+                'song': row[0],
+                'artist': row[1],
+                'album': row[2] or '',
+                'genres': row[3] or '',
+                'total_plays': row[4] or 0,
+                'song_length_ms': row[5] or 0,
+                'total_elapsed_ms': row[6] or 0
+            }
+            for row in rows
+        ]
+        conn.close()
+
+    return all_docs
 
 
-# def log_ui_play(db_type: str, db_path: str, song: str, artist: str, elapsed_ms: int) -> None:
-    # """Log a play from the UI to the ui_plays table/collection
+def find_top_genres(db_type: str, db_path: str, n: int = 3,
+                   start_date: Optional[datetime] = None,
+                   end_date: Optional[datetime] = None,
+                   stats_data: Optional[List[dict]] = None) -> List[dict]:
+    """Finds the top n genres listened to based on total_elapsed_ms stats.
 
-    # Args:
-    #     db_type (str): Database type ('mongo' or 'local')
-    #     db_path (str): Path to local database if applicable
-    #     song (str): Song name
-    #     artist (str): Artist name
-    #     elapsed_ms (int): Milliseconds listened
-    # """
-    # pass
+    Args:
+        db_type (str): Type of database ('mongo' or 'local')
+        db_path (str): Path to local db file
+        n (int): The number of top genres to show. Defaults to 3.
+        start_date (Optional[datetime]): Filter plays from this date onwards
+        end_date (Optional[datetime]): Filter plays up to this date
+        stats_data (Optional[List[dict]]): Pre-loaded stats data. If not provided,
+                                          will load from database.
+
+    Returns:
+        List[dict]: [
+            {
+                'genre': str,
+                'total_elapsed_mins': int
+            },
+            ...
+        ]
+    """
+    stats = stats_data if stats_data is not None else load_stats_from_db(db_type, db_path, start_date, end_date)
+
+    if not stats:
+        return []
+
+    # aggregate by genre
+    genre_stats = {}
+    for song in stats:
+        genres_str = song.get('genres', '')
+        if not genres_str:
+            continue
+
+        elapsed = song.get('total_elapsed_ms', 0)
+        for genre in genres_str.split(','):
+            genre = genre.strip()
+            if genre:
+                if genre not in genre_stats:
+                    genre_stats[genre] = 0
+                genre_stats[genre] += elapsed
+
+    # sort and get top n
+    sorted_genres = sorted(genre_stats.items(), key=lambda x: x[1], reverse=True)[:n]
+
+    return [{'genre': genre, 'total_elapsed_mins': time_ms // 60000} for genre, time_ms in sorted_genres]
+
+
+def find_top_artists(db_type: str, db_path: str, n: int = 3,
+                    start_date: Optional[datetime] = None,
+                    end_date: Optional[datetime] = None,
+                    stats_data: Optional[List[dict]] = None) -> List[dict]:
+    """Finds the top n artists listened to based on total_elapsed_ms stats.
+
+    Args:
+        db_type (str): Type of database ('mongo' or 'local')
+        db_path (str): Path to local db file
+        n (int): The number of top artists to show. Defaults to 3.
+        start_date (Optional[datetime]): Filter plays from this date onwards
+        end_date (Optional[datetime]): Filter plays up to this date
+        stats_data (Optional[List[dict]]): Pre-loaded stats data. If not provided,
+                                          will load from database.
+
+    Returns:
+        List[dict]: [
+            {
+                'artist': str,
+                'total_elapsed_mins': int
+            },
+            ...
+        ]
+    """
+    stats = stats_data if stats_data is not None else load_stats_from_db(db_type, db_path, start_date, end_date)
+
+    if not stats:
+        return []
+
+    # aggregate by artist
+    artist_stats = {}
+    for song in stats:
+        artist = song.get('artist', '')
+        if not artist:
+            continue
+
+        elapsed = song.get('total_elapsed_ms', 0)
+        if artist not in artist_stats:
+            artist_stats[artist] = 0
+        artist_stats[artist] += elapsed
+
+    # sort and get top n
+    sorted_artists = sorted(artist_stats.items(), key=lambda x: x[1], reverse=True)[:n]
+
+    return [{'artist': artist, 'total_elapsed_mins': elapsed_ms // 60000} for artist, elapsed_ms in sorted_artists]
+
+
+def find_top_albums(db_type: str, db_path: str, n: int = 3,
+                   start_date: Optional[datetime] = None,
+                   end_date: Optional[datetime] = None,
+                   stats_data: Optional[List[dict]] = None) -> List[dict]:
+    """Finds the top n albums listened to based on total_elapsed_ms stats.
+
+    Args:
+        db_type (str): Type of database ('mongo' or 'local')
+        db_path (str): Path to local db file
+        n (int): The number of top albums to show. Defaults to 3.
+        start_date (Optional[datetime]): Filter plays from this date onwards
+        end_date (Optional[datetime]): Filter plays up to this date
+        stats_data (Optional[List[dict]]): Pre-loaded stats data. If not provided,
+                                          will load from database.
+
+    Returns:
+        List[dict]: [
+            {
+                'album': str,
+                'artist': str,
+                'total_elapsed_mins': int
+            },
+            ...
+        ]
+    """
+    stats = stats_data if stats_data is not None else load_stats_from_db(db_type, db_path, start_date, end_date)
+
+    if not stats:
+        return []
+
+    # aggregate by album and artist
+    album_stats = {}
+    for song in stats:
+        album = song.get('album', '')
+        artist = song.get('artist', '')
+        if not album or not artist:
+            continue
+
+        elapsed = song.get('total_elapsed_ms', 0)
+        album_key = (album, artist)
+        if album_key not in album_stats:
+            album_stats[album_key] = 0
+        album_stats[album_key] += elapsed
+
+    # sort and get top n
+    sorted_albums = sorted(album_stats.items(), key=lambda x: x[1], reverse=True)[:n]
+
+    return [{'album': album, 'artist': artist, 'total_elapsed_mins': elapsed_ms // 60000}
+            for (album, artist), elapsed_ms in sorted_albums]
+
+
+def find_top_songs(db_type: str, db_path: str, n: int = 3,
+                  start_date: Optional[datetime] = None,
+                  end_date: Optional[datetime] = None,
+                  stats_data: Optional[List[dict]] = None) -> List[dict]:
+    """Finds the top n songs listened to based on total_plays stats.
+
+    Args:
+        db_type (str): Type of database ('mongo' or 'local')
+        db_path (str): Path to local db file
+        n (int): The number of top songs to show. Defaults to 3.
+        start_date (Optional[datetime]): Filter plays from this date onwards
+        end_date (Optional[datetime]): Filter plays up to this date
+        stats_data (Optional[List[dict]]): Pre-loaded stats data. If not provided,
+                                          will load from database.
+
+    Returns:
+        List[dict]: [
+            {
+                'song': str,
+                'artist': str,
+                'total_plays': int
+            },
+            ...
+        ]
+    """
+    stats = stats_data if stats_data is not None else load_stats_from_db(db_type, db_path, start_date, end_date)
+
+    if not stats:
+        return []
+
+    # sort by total_plays and get top n
+    sorted_songs = sorted(stats, key=lambda x: x.get('total_plays', 0), reverse=True)[:n]
+
+    return [{'song': song['song'], 'artist': song['artist'], 'total_plays': song['total_plays']}
+            for song in sorted_songs]

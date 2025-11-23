@@ -12,7 +12,10 @@ from typing import Optional, List
 from datetime import datetime
 
 from .constants import *
-from .wrapped_helpers import find_ipod, fix_filenames_in_db
+from .wrapped_helpers import (
+    find_ipod, fix_filenames_in_db,
+    find_top_genres, find_top_artists, find_top_albums, find_top_songs
+)
 from .schema import (
     SQLITE_SONGS_TABLE, SQLITE_PLAYS_TABLE,
     SQLITE_PLAYS_TIMESTAMP_INDEX, SQLITE_PLAYS_SONG_ARTIST_INDEX,
@@ -476,7 +479,7 @@ class LogAnalyser:
         return genre_str
 
 
-    def df_to_file(self, df: pl.DataFrame = None,
+    def df_to_file(self, df: Optional[pl.DataFrame] = None,
                    output_file: str = 'sample-files/ipod_log.csv') -> None:
         """Writes the given dataframe, or the log dataframe, to the given
         output file.
@@ -642,140 +645,11 @@ class LogAnalyser:
                 print("No genre duplicates found")
 
 
-    def find_top_genres(self, n: int = 3) -> List[str]:
-        """Finds the top n genres listened to based on
-        total_elapsed_ms stats.
-
-        Args:
-            n (int, optional): The number of top genres to show. Defaults to 3.
-
-        Returns:
-            List[str]: [first, second, third, ..., N] top genres
-        """
-        # load stats from db
-        stats_df = self.load_stats_from_db()
-
-        if stats_df.is_empty():
-            return []
-
-        # filter out rows missing info
-        stats_df = stats_df.filter(
-            (pl.col('genres').is_not_null()) &
-            (pl.col('genres') != '') &
-            (pl.col('total_elapsed_ms').is_not_null())
-        )
-
-        # explode genres into separate rows
-        genre_rows = []
-        for row in stats_df.iter_rows(named=True):
-            genres = row['genres'].split(',')
-            elapsed = row['total_elapsed_ms']
-            for genre in genres:
-                genre = genre.strip()
-                if genre:
-                    genre_rows.append({'genre': genre, 'total_elapsed_ms': elapsed})
-
-        if not genre_rows:
-            return []
-
-        genre_df = pl.DataFrame(genre_rows)
-
-        # aggregate by genre
-        top_genres = genre_df.group_by('genre').agg(
-            pl.col('total_elapsed_ms').sum().alias('total_time')
-        ).sort('total_time', descending=True).head(n)
-
-        return top_genres['genre'].to_list()
-
-
-    def find_top_artists(self, n: int = 3) -> List[str]:
-        """Finds the top n artists listened to based on
-        total_plays stats.
-
-        Args:
-            n (int, optional): The number of top artists to show. Defaults to 3.
-
-        Returns:
-            List[str]: [first, second, third, ..., N] top artists
-        """
-        # load stats from db
-        stats_df = self.load_stats_from_db()
-
-        if stats_df.is_empty():
-            return []
-
-        # filter out rows without total_plays
-        stats_df = stats_df.filter(pl.col('total_plays').is_not_null())
-
-        # aggregate by artist
-        top_artists = stats_df.group_by('artist').agg(
-            pl.col('total_plays').sum().alias('total_plays')
-        ).sort('total_plays', descending=True).head(n)
-
-        return top_artists['artist'].to_list()
-    
-    
-    def find_top_albums(self, n: int = 3) -> List[str]:
-        """Finds the top n albums listened to based on
-        total_plays stats.
-
-        Args:
-            n (int, optional): The number of top albums to show. Defaults to 3.
-
-        Returns:
-            List[str]: [first, second, third, ..., N] top albums
-        """
-        # load stats from db
-        stats_df = self.load_stats_from_db()
-
-        if stats_df.is_empty():
-            return []
-
-        # filter out rows without total_plays
-        stats_df = stats_df.filter(pl.col('total_plays').is_not_null())
-
-        # aggregate by album (and artist in case of same-named albums)
-        top_albums = stats_df.group_by(['album', 'artist']).agg(
-            pl.col('total_plays').sum().alias('total_plays')
-        ).sort('total_plays', descending=True).head(n)
-
-        # return album names (w/artist for context)
-        return [(row["album"], row["artist"]) for row in top_albums.iter_rows(named=True)]
-       
-    
-    def find_top_songs(self, n: int = 3) -> List[tuple]:
-        """Finds the top n songs listened to based on
-        total_plays stats.
-
-        Args:
-            n (int, optional): The number of top songs to show. Defaults to 3.
-
-        Returns:
-            List[str]: [first, second, third, ..., N] top songs
-        """
-        # load stats from db
-        stats_df = self.load_stats_from_db()
-
-        if stats_df.is_empty():
-            return []
-
-        # filter out rows without total_plays
-        stats_df = stats_df.filter(pl.col('total_plays').is_not_null())
-
-        # aggregate by song (and artist in case of same-named songs)
-        top_songs = stats_df.group_by(['song', 'artist']).agg(
-            pl.col('total_plays').sum().alias('total_plays')
-        ).sort('total_plays', descending=True).head(n)
-
-        # return song names (w/artist for context)
-        return [(row['song'],row['artist']) for row in top_songs.iter_rows(named=True)]
-    
-    
-    def find_most_listened_to(self) -> tuple:
+    def find_most_listened_to(self) -> Optional[tuple]:
         """Finds the song most listened to by total_plays_count.
 
         Returns:
-            tuple: (song, artist, album)
+            Optional[tuple]: (song, artist, album)
         """
         # load stats from db
         stats_df = self.load_stats_from_db()
@@ -811,23 +685,23 @@ class LogAnalyser:
         # sum elapsed time + convert to minutes
         total_ms = stats_df['total_elapsed_ms'].sum()
         total_minutes = total_ms // 60000
-        return total_minutes
+        return int(total_minutes)
     
     
     def calc_all_stats(self) -> dict:
         """Calculates all the relevant iPod Wrapped Stats"""
         # calculations
-        top_genres = self.find_top_genres()
-        top_artists = self.find_top_artists(5)
-        top_albums = self.find_top_albums()
-        top_songs = self.find_top_songs(5)
-        
+        top_genres = find_top_genres(self.db_type, self.db_path)
+        top_artists = find_top_artists(self.db_type, self.db_path, 5)
+        top_albums = find_top_albums(self.db_type, self.db_path)
+        top_songs = find_top_songs(self.db_type, self.db_path, 5)
+
         # setup
         stats = {
-            "top_genres": [{"genre": genre} for genre in top_genres],
-            "top_artists": [{"artist": artist} for artist in top_artists],
-            "top_albums": [{"album": album} for album in top_albums],
-            "top_songs": [{"song": song} for song in top_songs],
+            "top_genres": top_genres,
+            "top_artists": top_artists,
+            "top_albums": top_albums,
+            "top_songs": top_songs,
             "most_listened_song": self.find_most_listened_to(),
             "total_play_time_mins": self.calc_total_play_time()
         }
@@ -843,7 +717,7 @@ class LogAnalyser:
             print("Database connection closed")
 
 
-    def run(self) -> bool:
+    def run(self) -> dict:
         """Runs the log analyser from start to finish"""
         # find logs
         log_location = self.find_playback_log()

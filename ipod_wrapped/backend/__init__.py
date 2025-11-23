@@ -11,7 +11,12 @@ from .wrapped_helpers import (
     ms_to_mmss,
     has_data,
     create_genre_mappings,
-    grab_all_songs
+    grab_all_songs,
+    find_top_genres,
+    find_top_artists,
+    find_top_albums,
+    find_top_songs,
+    load_stats_from_db
 )
 from .album_art_fixer import process_images, organize_music_files, clear_temp_directory
 from .constants import *
@@ -30,5 +35,10 @@ __all__ = [
     'clear_temp_directory',
     'has_data',
     'create_genre_mappings',
-    'grab_all_songs'
+    'grab_all_songs',
+    'find_top_genres',
+    'find_top_artists',
+    'find_top_albums',
+    'find_top_songs',
+    'load_stats_from_db'
 ]
