@@ -317,7 +317,7 @@ headerbar viewswitcher label {
 } */
 
 .stats-title-entry {
-    min-width: 100px;
+    min-width: 125px;
 }
 
 .stats-stat-filter-box {
@@ -348,10 +348,25 @@ headerbar viewswitcher label {
 }
 
 .stats-indiv-stat-box spinbutton {
-    min-width: 50px;
     margin-right: 8px;
 }
 
 .stats-indiv-stat-box label {
     font-size: 12px;
+}
+
+.stats-pg-generate-btn {
+    margin-top: 30px;
+}
+
+.stats-pg-generate-btn:hover {
+    background-color: #923a78;
+}
+
+.wrapped-page {
+    margin: 0;
+}
+
+.generated-stats-pane {
+    background-color: #1b1b1e;
 }

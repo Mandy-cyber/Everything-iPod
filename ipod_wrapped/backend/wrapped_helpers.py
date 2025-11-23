@@ -1629,3 +1629,31 @@ def find_top_songs(db_type: str, db_path: str, n: int = 3,
 
     return [{'song': song['song'], 'artist': song['artist'], 'total_plays': song['total_plays']}
             for song in sorted_songs]
+
+
+def get_total_listening_time(db_type: str, db_path: str,
+                             start_date: Optional[datetime] = None,
+                             end_date: Optional[datetime] = None,
+                             stats_data: Optional[List[dict]] = None) -> int:
+    """Calculates total listening time in minutes.
+
+    Args:
+        db_type (str): Type of database ('mongo' or 'local')
+        db_path (str): Path to local db file
+        start_date (Optional[datetime]): Filter plays from this date onwards
+        end_date (Optional[datetime]): Filter plays up to this date
+        stats_data (Optional[List[dict]]): Pre-loaded stats data. If not provided,
+                                          will load from database.
+
+    Returns:
+        int: Total listening time in minutes
+    """
+    stats = stats_data if stats_data is not None else load_stats_from_db(db_type, db_path, start_date, end_date)
+
+    if not stats:
+        return 0
+
+    # sum all total_elapsed_ms
+    total_ms = sum(song.get('total_elapsed_ms', 0) for song in stats)
+
+    return total_ms // 60000

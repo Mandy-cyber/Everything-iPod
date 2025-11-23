@@ -16,7 +16,8 @@ from .wrapped_helpers import (
     find_top_artists,
     find_top_albums,
     find_top_songs,
-    load_stats_from_db
+    load_stats_from_db,
+    get_total_listening_time
 )
 from .album_art_fixer import process_images, organize_music_files, clear_temp_directory
 from .constants import *
@@ -40,5 +41,6 @@ __all__ = [
     'find_top_artists',
     'find_top_albums',
     'find_top_songs',
-    'load_stats_from_db'
+    'load_stats_from_db',
+    'get_total_listening_time'
 ]

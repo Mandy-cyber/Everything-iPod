@@ -29,7 +29,7 @@ class WrappedPage(Gtk.ScrolledWindow):
         sw_right.add_css_class('generated-stats-scrolled')
         
         self.right_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-        self.right_box.set_size_request(215, -1)
+        self.right_box.set_size_request(375, -1)
         self.right_box.add_css_class('generated-stats-pane')
         sw_right.set_child(self.right_box)
         

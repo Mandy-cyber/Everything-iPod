@@ -2,10 +2,14 @@ import json
 from datetime import datetime
 import gi
 gi.require_version('Gtk', '4.0')
-from gi.repository import Gtk
+gi.require_version("GtkSource", "5")
+from gi.repository import Gtk, GtkSource, GLib
 
-from backend import find_top_genres, find_top_artists, find_top_albums, find_top_songs, load_stats_from_db 
+from backend import find_top_genres, find_top_artists, find_top_albums, find_top_songs, load_stats_from_db, get_total_listening_time 
 
+# TODO: 
+# - add clear button to date range
+# - double check stats math
 
 class StatsFilters:
     """Represents a set of stats filters/entries to
@@ -16,10 +20,10 @@ class StatsFilters:
     def __init__(self) -> None:
         """Initialize default filters"""
         self.filters = {
-            'mode': '',
+            'mode': 'nerd',
             'start_date': None,
             'end_date': None,
-            'wrapped_title': 'My iPod Wrapped Stats',
+            'wrapped_title': '',
             'max_artists': self.DEFAULT_MAX,
             'max_albums': self.DEFAULT_MAX,
             'max_songs': self.DEFAULT_MAX,
@@ -111,7 +115,6 @@ class StatsFilters:
 
         return box
     
-    
     def _create_stat_filter_box(self) -> Gtk.Box:
         """Creates the Top 'x' filter boxes.
 
@@ -146,7 +149,9 @@ class StatsFilters:
             adjustment = Gtk.Adjustment(value=self.DEFAULT_MAX, lower=0, upper=100, step_increment=1, page_increment=10)
             stat_entry = Gtk.SpinButton(adjustment=adjustment, digits=0, numeric=True)
             stat_entry.set_value(self.DEFAULT_MAX)
-            stat_label = Gtk.Label(label=f"Top {int(self.DEFAULT_MAX)} {stat}")
+            stat_label = Gtk.Label()
+            stat_label.set_use_markup(True)
+            stat_label.set_markup(f"Top <u>{int(self.DEFAULT_MAX)}</u> {stat}")
 
             stat_entry.connect('value-changed', self._on_stat_entry_changed, stat_label, stat)
 
@@ -157,8 +162,8 @@ class StatsFilters:
 
         return box
         
-         
     def _on_mode_dropdown_changed(self, dropdown: Gtk.DropDown, _pspec) -> None:
+        # update filter
         selected = dropdown.get_selected()
         if selected == 0:
             self.filters["mode"] = "nerd"
@@ -171,14 +176,15 @@ class StatsFilters:
     def _on_stat_entry_changed(self, spin_button: Gtk.SpinButton, label: Gtk.Label, stat: str) -> None:
         # update label
         value = int(spin_button.get_value())
-        label.set_label(f"Top {value} {stat}")
+        stat_text = stat[:-1] if value == 1 else stat
+        label.set_markup(f"Top <u>{value}</u> {stat_text}")
         # update stat
         self.filters[f"max_{stat}"] = value
 
     def _on_from_date_selected(self, calendar: Gtk.Calendar, button: Gtk.MenuButton, popover: Gtk.Popover) -> None:
         # update label
         date = calendar.get_date()
-        button.set_label(f"{date.get_year()}-{date.get_month()+1:02d}-{date.get_day_of_month():02d}")
+        button.set_label(f"{date.get_year()}-{date.get_month():02d}-{date.get_day_of_month():02d}")
         # update stat
         self.filters['start_date'] = date
         popover.popdown()
@@ -186,15 +192,60 @@ class StatsFilters:
     def _on_to_date_selected(self, calendar: Gtk.Calendar, button: Gtk.MenuButton, popover: Gtk.Popover) -> None:
         # update label
         date = calendar.get_date()
-        button.set_label(f"{date.get_year()}-{date.get_month()+1:02d}-{date.get_day_of_month():02d}")
+        button.set_label(f"{date.get_year()}-{date.get_month():02d}-{date.get_day_of_month():02d}")
         # update stat
         self.filters['end_date'] = date
         popover.popdown()
     
+    def _clear_pane(self, pane: Gtk.Box) -> None:
+        """Clears the given pane of any widgets/elements"""
+        while True:
+            child = pane.get_first_child()
+            if not child:
+                break
+            pane.remove(child)
+            
+    def _nerd_mode_stats_view(self, results: dict) -> GtkSource.View:
+        """Creates a JSON code block view of the given results"""
+        # setup lang + syntax
+        source_manager = GtkSource.LanguageManager.get_default()
+        json_lang = source_manager.get_language("json")
+        buffer = GtkSource.Buffer()
+        if json_lang:
+            buffer.set_language(json_lang)
+            buffer.set_highlight_syntax(True)
+        
+        # add code
+        buffer.set_text(json.dumps(results, indent=4))
+        
+        # set light mode
+        scheme_manager = GtkSource.StyleSchemeManager.get_default()
+        dark_mode = scheme_manager.get_scheme("solarized-light")
+        if dark_mode:
+            buffer.set_style_scheme(dark_mode)          
+        
+        # finish code block setup
+        source_view = GtkSource.View(buffer=buffer)
+        source_view.set_show_line_numbers(True)
+        source_view.set_editable(False)
+        source_view.set_wrap_mode(Gtk.WrapMode.WORD)
+        return source_view
     
     def _show_stats(self, stats_pane: Gtk.Box, db_info: dict) -> None:
+        """Calculates stats based on self.filters and displays them
+        in the given pane."""
         # setup
-        results = dict()
+        results = {'metadata': {}, 'data': {}}
+        for k, v in self.filters.items():
+            if k == 'start_date' or k == 'end_date':
+                # convert dates to str
+                if v:
+                    results['metadata'][k] = f"{v.get_year()}-{v.get_month():02d}-{v.get_day_of_month():02d}"
+                else:
+                    results['metadata'][k] = None
+            else:
+                results['metadata'][k] = v
+                
         categories = {
             'artists': find_top_artists,
             'albums': find_top_albums,
@@ -208,10 +259,10 @@ class StatsFilters:
         end_date = None
         if self.filters['start_date']:
             glib_date = self.filters['start_date']
-            start_date = datetime(glib_date.get_year(), glib_date.get_month() + 1, glib_date.get_day_of_month())
+            start_date = datetime(glib_date.get_year(), glib_date.get_month(), glib_date.get_day_of_month(), 0, 0, 0)
         if self.filters['end_date']:
             glib_date = self.filters['end_date']
-            end_date = datetime(glib_date.get_year(), glib_date.get_month() + 1, glib_date.get_day_of_month())
+            end_date = datetime(glib_date.get_year(), glib_date.get_month(), glib_date.get_day_of_month(), 23, 59, 59)
 
         # load data for making stats
         db_stats = load_stats_from_db(
@@ -224,16 +275,31 @@ class StatsFilters:
         # breakdown by category
         for category, cat_func in categories.items():
             top = cat_func(
-                db_type=db_type, db_path=db_path, 
-                n=self.filters[f'max_{category}'], 
+                db_type=db_type, db_path=db_path,
+                n=self.filters[f'max_{category}'],
                 stats_data=db_stats
             )
-            results[f'top_{category}'] = top
-        
-        # show stats
-        print(json.dumps(results, indent=4))
-        # stats_pane.append()
+            results['data'][f'top_{category}'] = top
 
+        # total listening time
+        results['data']['total_listened_mins'] = get_total_listening_time(
+            db_type=db_type,
+            db_path=db_path,
+            stats_data=db_stats
+        )
+        
+        # clear
+        mode = self.filters['mode']
+        self._clear_pane(stats_pane)
+        
+        # nerd mode -- json
+        if mode == 'nerd':
+            source_view = self._nerd_mode_stats_view(results)
+            stats_pane.append(source_view)
+        else:
+            # TODO: add visual mode
+            # visual mode -- graphic
+            pass
 
     def create_wrapped_box(self, stats_pane: Gtk.Box, db_info: dict) -> Gtk.Box:
         """Creates a box with all the Wrapped page filters
@@ -248,10 +314,11 @@ class StatsFilters:
         box.append(metadata_box)
         box.append(stat_filter_box)
         
-        # add button
+        # button
         generate_btn = Gtk.Button()
         generate_btn.set_label("Generate")
         generate_btn.set_size_request(60, 30)
+        generate_btn.add_css_class('stats-pg-generate-btn')
         generate_btn.connect("clicked", lambda btn: self._show_stats(stats_pane, db_info))
         
         box.append(generate_btn)
