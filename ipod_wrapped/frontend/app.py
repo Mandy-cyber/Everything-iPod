@@ -100,6 +100,10 @@ class MainWindow(Adw.ApplicationWindow):
     
     def refresh_all_pages(self) -> None:
         """Refresh all pages after data has been updated"""
+        # refresh genres page
+        if hasattr(self.genres_page, 'refresh'):
+            self.genres_page.refresh()
+
         # refresh albums page
         if hasattr(self.albums_page, 'refresh'):
             self.albums_page.refresh()

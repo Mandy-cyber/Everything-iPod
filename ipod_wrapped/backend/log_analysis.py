@@ -21,7 +21,9 @@ from .schema import (
 
 load_dotenv()
 
-# TODO: add logic to check date/time so stats not repeated year after year. can then also add monthly stats
+# TODO: 
+# - prevent duplicate play entries being added to db
+# - display albums missing genre info
 
 class LogAnalyser:
 
