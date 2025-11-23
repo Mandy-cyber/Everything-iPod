@@ -1399,17 +1399,18 @@ def load_stats_from_db(db_type: str, db_path: str,
         cursor = conn.cursor()
 
         # build date filter for plays
-        date_filter = ''
+        date_conditions = []
         params = []
-        if start_date or end_date:
-            conditions = []
-            if start_date:
-                conditions.append('p.timestamp >= ?')
-                params.append(start_date.isoformat())
-            if end_date:
-                conditions.append('p.timestamp <= ?')
-                params.append(end_date.isoformat())
-            date_filter = 'WHERE ' + ' AND '.join(conditions)
+        if start_date:
+            date_conditions.append('p.timestamp >= ?')
+            params.append(start_date.isoformat())
+        if end_date:
+            date_conditions.append('p.timestamp <= ?')
+            params.append(end_date.isoformat())
+
+        date_filter = ''
+        if date_conditions:
+            date_filter = ' AND ' + ' AND '.join(date_conditions)
 
         # aggregate from plays table
         query = f'''
@@ -1422,9 +1423,9 @@ def load_stats_from_db(db_type: str, db_path: str,
                 s.song_length_ms,
                 SUM(p.elapsed_ms) as total_elapsed_ms
             FROM songs s
-            LEFT JOIN plays p ON s.song = p.song AND s.artist = p.artist
-            {date_filter}
+            LEFT JOIN plays p ON s.song = p.song AND s.artist = p.artist{date_filter}
             GROUP BY s.song, s.artist
+            HAVING total_plays > 0
         '''
         cursor.execute(query, params)
         rows = cursor.fetchall()

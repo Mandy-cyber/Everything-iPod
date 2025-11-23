@@ -47,7 +47,7 @@ class MainWindow(Adw.ApplicationWindow):
         self.genres_page = GenresPage(db_type, db_path, album_art_dir, self.toggle_bottom_bar)
         self.albums_page = AlbumsPage(db_type, db_path, album_art_dir, self.toggle_bottom_bar)
         self.songs_page = SongsPage(db_type, db_path, album_art_dir, self.toggle_bottom_bar)
-        self.wrapped_page = WrappedPage()
+        self.wrapped_page = WrappedPage(db_type, db_path, album_art_dir, self.toggle_bottom_bar)
         
         # page titles w/icons
         self.stack.add_titled_with_icon(self.genres_page, "genres", "Genres", "org.gnome.Nautilus-symbolic")
@@ -114,7 +114,7 @@ class MainWindow(Adw.ApplicationWindow):
 
         # refresh wrapped page
         if hasattr(self.wrapped_page, 'refresh'):
-            self.wrapped_page.refresh()  # type: ignore
+            self.wrapped_page.refresh()
 
     def toggle_bottom_bar(self) -> None:
         """Toggle between collapsed and expanded bottom bar"""

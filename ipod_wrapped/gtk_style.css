@@ -284,3 +284,74 @@ headerbar viewswitcher label {
     background-color: rgba(153, 193, 241, 0.2);
     border-left: 3px solid #99c1f1;
 }
+
+/* STATS FILTERS */
+.stats-pg-filters {
+    padding: 15px 20px;
+}
+
+.stats-filter-box {
+    margin-bottom: 15px;
+}
+
+.stats-filter-label {
+    font-size: 11px;
+    font-weight: 400;
+    min-width: 80px;
+    margin-right: 5px;
+}
+
+.stats-mode-box,
+.stats-dates-container,
+.stats-title-box {
+    margin-bottom: 5px;
+}
+
+/* .stats-mode-dropdown {
+    min-width: 150px;
+}
+
+.stats-date-button {
+    min-width: 120px;
+    padding: 4px 10px;
+} */
+
+.stats-title-entry {
+    min-width: 100px;
+}
+
+.stats-stat-filter-box {
+    margin-top: 20px;
+}
+
+.stats-filter-box-title {
+    font-size: 18px;
+    font-weight: 500;
+    margin-bottom: 10px;
+}
+/* 
+.stats-filter-box-subtitle {
+    font-size: 10px;
+    font-weight: 300;
+    color: #923a78;
+    margin-bottom: 8px;
+} */
+
+.stats-indiv-stat-box {
+    margin-bottom: 5px;
+}
+
+.stats-bullet {
+    font-size: 14px;
+    margin-right: 8px;
+    min-width: 10px;
+}
+
+.stats-indiv-stat-box spinbutton {
+    min-width: 50px;
+    margin-right: 8px;
+}
+
+.stats-indiv-stat-box label {
+    font-size: 12px;
+}

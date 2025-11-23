@@ -2,15 +2,60 @@ import gi
 gi.require_version('Gtk', '4.0')
 from gi.repository import Gtk
 
+from backend import grab_all_metadata, has_data
+from ..widgets.stats_filters import StatsFilters
 
-class WrappedPage(Gtk.Box):
+
+class WrappedPage(Gtk.ScrolledWindow):
     """Page displaying wrapped statistics"""
 
-    def __init__(self):
-        super().__init__(orientation=Gtk.Orientation.VERTICAL)
+    def __init__(self, db_type: str, db_path: str, album_art_dir: str, toggle_bottom_bar_callback=None):
+        super().__init__()
 
-        # Placeholder label
-        label = Gtk.Label(label="Wrapped Stats Page - Coming Soon")
-        label.set_margin_top(50)
-        label.set_margin_bottom(50)
-        self.append(label)
+        # setup
+        self.toggle_bottom_bar = toggle_bottom_bar_callback
+        self.db_type = db_type
+        self.db_path = db_path
+        self.album_art_dir = album_art_dir
+        self.stats_filter = StatsFilters()
+        
+        self.add_css_class('page-area')
+        self.add_css_class('wrapped-page')
+        paned = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL)
+        
+        # paned - right
+        sw_right = Gtk.ScrolledWindow()
+        sw_right.set_policy(Gtk.PolicyType.NEVER,Gtk.PolicyType.AUTOMATIC)
+        sw_right.add_css_class('generated-stats-scrolled')
+        
+        self.right_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.right_box.set_size_request(215, -1)
+        self.right_box.add_css_class('generated-stats-pane')
+        sw_right.set_child(self.right_box)
+        
+        # paned - left
+        sw_left = Gtk.ScrolledWindow()
+        sw_left.set_policy(Gtk.PolicyType.NEVER,Gtk.PolicyType.AUTOMATIC)
+        sw_left.set_child(self.stats_filter.create_wrapped_box(
+            self.right_box, {'db_type': self.db_type, 'db_path': self.db_path}
+        ))
+        
+        # finish paned setup
+        paned.set_start_child(sw_left)
+        paned.set_end_child(sw_right)
+        paned.set_position(400)
+        paned.set_resize_start_child(True)
+        paned.set_resize_end_child(False)
+        paned.set_shrink_start_child(False)
+        paned.set_shrink_end_child(False)
+        
+        self.set_child(paned)
+        
+        
+    def refresh(self) -> None:
+        """Refresh the page by reloading data from database"""
+        pass
+        
+        
+        
+        
