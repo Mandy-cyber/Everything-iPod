@@ -157,6 +157,10 @@ columnview row:selected:hover {
     margin-top: 30px;
 }
 
+.album-pg-songs-table {
+    margin: 32px 150px 0px 50px;
+}
+
 /* HEADER BAR & VIEW SWITCHER */
 headerbar {
     background-color: #1b1b1e;

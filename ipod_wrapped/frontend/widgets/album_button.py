@@ -96,6 +96,7 @@ def _show_album_info(album_info: dict, db_type: str, db_path: str, album_art_dir
 
     # create table
     songs_table: Gtk.ColumnView = create_songs_table(selection, sort_model, show_columns={'title': True, 'artist': False, 'album': False, 'duration': True})
+    songs_table.add_css_class('album-pg-songs-table')
     scrolled_window.set_child(songs_table)
     content_box.append(scrolled_window)
 

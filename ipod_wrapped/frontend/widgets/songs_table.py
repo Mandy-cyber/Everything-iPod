@@ -3,7 +3,9 @@ import gi
 gi.require_version('Gtk', '4.0')
 from gi.repository import Gtk, Gio, GObject
 
-# TODO: paginate table
+# TODO: 
+# - paginate table
+# - show album songs in order
 
 class Song(GObject.Object):
     """Represents a song in the table """
