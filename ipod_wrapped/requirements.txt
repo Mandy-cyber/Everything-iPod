@@ -1,0 +1,8 @@
+polars
+python-dotenv
+requests
+pygobject
+pymongo
+Pillow
+mutagen
+typer
