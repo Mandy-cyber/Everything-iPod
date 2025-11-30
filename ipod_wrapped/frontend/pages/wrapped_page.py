@@ -2,7 +2,6 @@ import gi
 gi.require_version('Gtk', '4.0')
 from gi.repository import Gtk
 
-from backend import grab_all_metadata, has_data
 from ..widgets.stats_filters import StatsFilters
 
 

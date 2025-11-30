@@ -1,9 +1,15 @@
 from enum import Enum
+import os
 
 # misc.
 BATCH_SIZE = 50
 ipod_log_pattern = r'^(\d+):(\d+):(\d+):(.+)$'
 song_extensions = ['.mp3', '.flac', '.ogg', '.wav', '.m4a']
+
+# storage paths
+STORAGE_DIR = 'storage'
+DEFAULT_DB_PATH = os.path.join(STORAGE_DIR, 'ipod_wrapped.db')
+DEFAULT_ALBUM_ART_DIR = os.path.join(STORAGE_DIR, 'album-art')
 
 # lastfm
 lastfm_root = 'http://ws.audioscrobbler.com'

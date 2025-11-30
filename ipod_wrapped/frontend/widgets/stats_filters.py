@@ -9,7 +9,6 @@ from backend import find_top_genres, find_top_artists, find_top_albums, find_top
 
 # TODO: 
 # - add clear button to date range
-# - double check stats math
 # - change title entry to on-changed vs on-activated
 
 class StatsFilters:
@@ -286,7 +285,9 @@ class StatsFilters:
         results['data']['total_listened_mins'] = get_total_listening_time(
             db_type=db_type,
             db_path=db_path,
-            stats_data=db_stats
+            stats_data=db_stats,
+            start_date=start_date,
+            end_date=end_date
         )
         
         # clear

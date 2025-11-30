@@ -5,17 +5,18 @@ import json
 import subprocess
 import shutil
 import sqlite3
-import math
+import random
 from typing import Optional, List
 from pymongo import MongoClient
 from datetime import datetime
 
 from .album_art_fixer import process_images, organize_music_files, clear_temp_directory
+from .constants import DEFAULT_DB_PATH, DEFAULT_ALBUM_ART_DIR
 
-# TODO: 
-# - add dummy album cover for when album cover cant be found
+# TODO:
 # - abstract some more :sob:
 # - round up total_elapsed_ms sum
+# - store a local copy of playback.log in storage/ when sync is started
 
 
 def ms_to_mmss(milliseconds: int) -> str:
@@ -133,7 +134,7 @@ def has_data(db_type: str, db_path: str) -> bool:
             return False
 
 
-def fix_filenames_in_db(db_type: str = 'local', db_path: str = 'storage/ipod_wrapped.db') -> bool:
+def fix_filenames_in_db(db_type: str = 'local', db_path: str = DEFAULT_DB_PATH) -> bool:
     """Fixes the album and song names saved in the mongo or local db to match
     the names found in the Music directory. This is because often the
     log file truncates or otherwise messes them up.
@@ -459,7 +460,7 @@ def find_album_art(album: str, album_art_storage: str) -> str:
     return os.path.join(album_art_storage, "missing_album_cover.jpg")
 
 
-def fix_and_store_album_art(album_art_storage: str, db_type: str = 'local', db_path: str = 'storage/ipod_wrapped.db', force: bool = False) -> bool:
+def fix_and_store_album_art(album_art_storage: str, db_type: str = 'local', db_path: str = DEFAULT_DB_PATH, force: bool = False) -> bool:
     """Generates a cover.jpg for each album, and copies them locally
 
     Args:
@@ -1466,6 +1467,7 @@ def find_top_genres(db_type: str, db_path: str, n: int = 3,
             {
                 'genre': str,
                 'total_elapsed_mins': int
+                'album_art': str,
             },
             ...
         ]
@@ -1492,7 +1494,8 @@ def find_top_genres(db_type: str, db_path: str, n: int = 3,
 
     # sort and get top n
     sorted_genres = sorted(genre_stats.items(), key=lambda x: x[1], reverse=True)[:n]
-
+    
+    # build dict
     return [{'genre': genre, 'total_elapsed_mins': time_ms // 60000} for genre, time_ms in sorted_genres]
 
 
@@ -1516,6 +1519,7 @@ def find_top_artists(db_type: str, db_path: str, n: int = 3,
             {
                 'artist': str,
                 'total_elapsed_mins': int
+                'album_art': str,
             },
             ...
         ]
@@ -1564,6 +1568,7 @@ def find_top_albums(db_type: str, db_path: str, n: int = 3,
                 'album': str,
                 'artist': str,
                 'total_elapsed_mins': int
+                'album_art': str,
             },
             ...
         ]
@@ -1614,7 +1619,8 @@ def find_top_songs(db_type: str, db_path: str, n: int = 3,
             {
                 'song': str,
                 'artist': str,
-                'total_plays': int
+                'total_plays': int,
+                'album_art': str,
             },
             ...
         ]

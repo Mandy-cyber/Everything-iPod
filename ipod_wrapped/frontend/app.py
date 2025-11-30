@@ -8,10 +8,11 @@ from .pages import AlbumsPage, SongsPage, WrappedPage, GenresPage
 from .widgets.bottom_bar import create_bottom_bar
 from .widgets.banner import create_banner
 from .widgets.menu_nav import create_menu_nav
+from backend.constants import DEFAULT_DB_PATH, DEFAULT_ALBUM_ART_DIR
 
 class MainWindow(Adw.ApplicationWindow):
     """Main application window with navigation"""
-    def __init__(self, app, db_type="local", db_path="storage/ipod_wrapped.db", album_art_dir="storage/album-art"):
+    def __init__(self, app, db_type="local", db_path=DEFAULT_DB_PATH, album_art_dir=DEFAULT_ALBUM_ART_DIR):
         super().__init__(application=app)
         
         # setup css

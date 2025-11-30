@@ -12,6 +12,7 @@ from typing import Optional, List
 from datetime import datetime
 
 from .constants import *
+from .constants import DEFAULT_DB_PATH
 from .wrapped_helpers import (
     find_ipod, fix_filenames_in_db,
     find_top_genres, find_top_artists, find_top_albums, find_top_songs
@@ -30,12 +31,12 @@ load_dotenv()
 
 class LogAnalyser:
 
-    def __init__(self, db_type: str = 'mongo', db_path: str = 'storage/ipod_wrapped.db'):
+    def __init__(self, db_type: str = 'mongo', db_path: str = DEFAULT_DB_PATH):
         """Initialize LogAnalyser with chosen database type
 
         Args:
             db_type (str): Either 'mongo' or 'local'. Defaults to 'mongo'.
-            db_path (str): Path to local SQLite db file. Defaults to 'storage/ipod_wrapped.db'.
+            db_path (str): Path to local SQLite db file. Defaults to DEFAULT_DB_PATH.
         """
         self.db_type = db_type
         self.db_path = db_path
