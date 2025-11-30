@@ -422,11 +422,11 @@ class LogAnalyser:
                     ))
 
                 self.cursor.executemany('''
-                    INSERT INTO plays (song, artist, timestamp, elapsed_ms)
+                    INSERT OR IGNORE INTO plays (song, artist, timestamp, elapsed_ms)
                     VALUES (?, ?, ?, ?)
                 ''', plays_data)
                 self.conn.commit()
-                print(f"Inserted {self.cursor.rowcount} plays to SQLite")
+                print(f"Inserted {self.cursor.rowcount} new plays to SQLite")
 
         except Exception as e:
             print(f"Failed to insert play events: {e}")

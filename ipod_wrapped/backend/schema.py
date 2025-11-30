@@ -19,7 +19,8 @@ SQLITE_PLAYS_TABLE = '''
         song TEXT NOT NULL,
         artist TEXT NOT NULL,
         timestamp TEXT NOT NULL,
-        elapsed_ms INTEGER NOT NULL
+        elapsed_ms INTEGER NOT NULL,
+        UNIQUE(song, artist, timestamp, elapsed_ms)
     )
 '''
 
