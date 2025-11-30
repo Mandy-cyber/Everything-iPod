@@ -11,7 +11,7 @@ scratch*
 .vscode/
 *.sh
 total_plays.csv
-album-art/
+album_art/
 *.backup
 .claude/
 *.txt
