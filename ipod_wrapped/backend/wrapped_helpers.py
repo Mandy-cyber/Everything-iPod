@@ -9,6 +9,7 @@ import random
 from typing import Optional, List
 from pymongo import MongoClient
 from datetime import datetime
+from collections import defaultdict
 
 from .album_art_fixer import process_images, organize_music_files, clear_temp_directory
 from .constants import DEFAULT_DB_PATH, DEFAULT_ALBUM_ART_DIR
@@ -421,12 +422,13 @@ def _should_process_album_art(album_art_storage: str, db_type: str, db_path: str
     return db_last_updated > last_processed
 
 
-def find_album_art(album: str, album_art_storage: str) -> str:
+def find_album_art(album: str, album_art_storage: str = DEFAULT_ALBUM_ART_DIR) -> str:
     """Finds the art associated with the given album. Logic from Claude.
 
     Args:
         album (str): The album to search for
-        album_art_storage (str): The location of album covers
+        album_art_storage (str): The location of album covers. Defaults to
+        DEFAULT_ALBUM_ART_DIR
 
     Returns:
         str: The location of the album's specific cover art, or path to missing_album_cover.jpg if not found
@@ -1334,7 +1336,6 @@ def grab_all_songs(db_type: str, db_path: str, album_art_dir: str,
         return all_songs
 
 
-
 def load_stats_from_db(db_type: str, db_path: str,
                        start_date: Optional[datetime] = None,
                        end_date: Optional[datetime] = None) -> List[dict]:
@@ -1478,25 +1479,32 @@ def find_top_genres(db_type: str, db_path: str, n: int = 3,
         return []
 
     # aggregate by genre
-    genre_stats = {}
+    genre_stats = defaultdict(list)
     for song in stats:
         genres_str = song.get('genres', '')
         if not genres_str:
             continue
 
         elapsed = song.get('total_elapsed_ms', 0)
+        album_art = find_album_art(song.get('album', ''))
         for genre in genres_str.split(','):
             genre = genre.strip()
             if genre:
                 if genre not in genre_stats:
-                    genre_stats[genre] = 0
-                genre_stats[genre] += elapsed
+                    # add elapsed time
+                    genre_stats[genre] = [0]
+                genre_stats[genre][0] += elapsed
+                
+                if len(genre_stats[genre]) == 2:
+                    continue
+                # add album art
+                genre_stats[genre].append(album_art)
 
     # sort and get top n
     sorted_genres = sorted(genre_stats.items(), key=lambda x: x[1], reverse=True)[:n]
     
     # build dict
-    return [{'genre': genre, 'total_elapsed_mins': time_ms // 60000} for genre, time_ms in sorted_genres]
+    return [{'genre': genre, 'total_elapsed_mins': metadata[0] // 60000, 'album_art': metadata[1]} for genre, metadata in sorted_genres]
 
 
 def find_top_artists(db_type: str, db_path: str, n: int = 3,
@@ -1530,21 +1538,28 @@ def find_top_artists(db_type: str, db_path: str, n: int = 3,
         return []
 
     # aggregate by artist
-    artist_stats = {}
+    artist_stats = defaultdict(list)
     for song in stats:
         artist = song.get('artist', '')
         if not artist:
             continue
 
         elapsed = song.get('total_elapsed_ms', 0)
+        album_art = find_album_art(song.get('album', ''))
         if artist not in artist_stats:
-            artist_stats[artist] = 0
-        artist_stats[artist] += elapsed
+            # add elapsed time
+            artist_stats[artist] = [0]
+        artist_stats[artist][0] += elapsed
+        
+        if len(artist_stats[artist]) == 2:
+            continue
+        # add album art
+        artist_stats[artist].append(album_art)
 
     # sort and get top n
     sorted_artists = sorted(artist_stats.items(), key=lambda x: x[1], reverse=True)[:n]
 
-    return [{'artist': artist, 'total_elapsed_mins': elapsed_ms // 60000} for artist, elapsed_ms in sorted_artists]
+    return [{'artist': artist, 'total_elapsed_mins': metadata[0] // 60000, 'album_art': metadata[1]} for artist, metadata in sorted_artists]
 
 
 def find_top_albums(db_type: str, db_path: str, n: int = 3,
@@ -1579,24 +1594,31 @@ def find_top_albums(db_type: str, db_path: str, n: int = 3,
         return []
 
     # aggregate by album and artist
-    album_stats = {}
+    album_stats = defaultdict(list)
     for song in stats:
         album = song.get('album', '')
         artist = song.get('artist', '')
+        album_art = find_album_art(song.get('album', ''))
         if not album or not artist:
             continue
 
         elapsed = song.get('total_elapsed_ms', 0)
         album_key = (album, artist)
         if album_key not in album_stats:
-            album_stats[album_key] = 0
-        album_stats[album_key] += elapsed
+            # add elapsed time
+            album_stats[album_key] = [0]
+        album_stats[album_key][0] += elapsed
+        
+        if len(album_stats[album_key]) == 2:
+            continue
+        # add album art
+        album_stats[album_key].append(album_art)
 
     # sort and get top n
     sorted_albums = sorted(album_stats.items(), key=lambda x: x[1], reverse=True)[:n]
 
-    return [{'album': album, 'artist': artist, 'total_elapsed_mins': elapsed_ms // 60000}
-            for (album, artist), elapsed_ms in sorted_albums]
+    return [{'album': album, 'artist': artist, 'total_elapsed_mins': metadata[0] // 60000, 'album_art': metadata[1]}
+            for (album, artist), metadata in sorted_albums]
 
 
 def find_top_songs(db_type: str, db_path: str, n: int = 3,
@@ -1632,8 +1654,11 @@ def find_top_songs(db_type: str, db_path: str, n: int = 3,
 
     # sort by total_plays and get top n
     sorted_songs = sorted(stats, key=lambda x: x.get('total_plays', 0), reverse=True)[:n]
+    for song_obj in sorted_songs:
+        album_art = find_album_art(song_obj['album'])
+        song_obj['album_art'] = album_art
 
-    return [{'song': song['song'], 'artist': song['artist'], 'total_plays': song['total_plays']}
+    return [{'song': song['song'], 'artist': song['artist'], 'total_plays': song['total_plays'], 'album_art': song['album_art']}
             for song in sorted_songs]
 
 

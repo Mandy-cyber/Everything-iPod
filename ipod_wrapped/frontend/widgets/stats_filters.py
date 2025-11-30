@@ -1,9 +1,13 @@
+import os
 import json
 from datetime import datetime
+from typing import List, Union
 import gi
 gi.require_version('Gtk', '4.0')
+gi.require_version('Adw', '1')
 gi.require_version("GtkSource", "5")
-from gi.repository import Gtk, GtkSource, GLib
+gi.require_version('Pango', '1.0')
+from gi.repository import Gtk, GtkSource, Adw, Pango
 
 from backend import find_top_genres, find_top_artists, find_top_albums, find_top_songs, load_stats_from_db, get_total_listening_time 
 
@@ -29,8 +33,8 @@ class StatsFilters:
             'max_songs': self.DEFAULT_MAX,
             'max_genres': self.DEFAULT_MAX,
         }
+        self.stat_filter_box = None
         
-
     def _create_metadata_filter_box(self) -> Gtk.Box:
         """Creates the 'Mode', 'Date Range', and 'Title' filter boxes.
 
@@ -167,8 +171,12 @@ class StatsFilters:
         selected = dropdown.get_selected()
         if selected == 0:
             self.filters["mode"] = "nerd"
+            if self.stat_filter_box:
+                self.stat_filter_box.set_sensitive(True)
         elif selected == 1:
             self.filters["mode"] = "visual"
+            if self.stat_filter_box:
+                self.stat_filter_box.set_sensitive(False)
 
     def _on_title_entry_activated(self, entry: Gtk.Entry) -> None:
         self.filters["wrapped_title"] = entry.get_text()
@@ -204,6 +212,21 @@ class StatsFilters:
             if not child:
                 break
             pane.remove(child)
+    
+    def _hide_album_art_field(self, results: Union[dict, list]) -> Union[dict, list]:
+        """Removes all occurrences of the 'album_art' field from
+        the given results. This field is really only used on
+        the backend and is not for viewing."""
+        if isinstance(results, dict):
+            new_dict = {}
+            for key, value in results.items():
+                if key != 'album_art':
+                    new_dict[key] = self._hide_album_art_field(value)
+            return new_dict
+        elif isinstance(results, list):
+            return [self._hide_album_art_field(item) for item in results]
+        else:
+            return results
             
     def _nerd_mode_stats_view(self, results: dict) -> GtkSource.View:
         """Creates a JSON code block view of the given results"""
@@ -216,7 +239,8 @@ class StatsFilters:
             buffer.set_highlight_syntax(True)
         
         # add code
-        buffer.set_text(json.dumps(results, indent=4))
+        cleaned_results = self._hide_album_art_field(results)
+        buffer.set_text(json.dumps(cleaned_results, indent=4, ensure_ascii=False))
         
         # set light mode
         scheme_manager = GtkSource.StyleSchemeManager.get_default()
@@ -230,6 +254,238 @@ class StatsFilters:
         source_view.set_editable(False)
         source_view.set_wrap_mode(Gtk.WrapMode.WORD)
         return source_view
+    
+    def _create_visual_mode_list_page(self, category: str, data: list) -> Gtk.Box:
+        """Creates a Spotify Wrapped-esque view of the given data"""
+        # setup page
+        page = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+        page.set_halign(Gtk.Align.FILL)
+        page.set_valign(Gtk.Align.CENTER)
+        page.set_margin_start(40)
+        page.set_margin_end(40)
+        page.add_css_class('stats-visual-page-box')
+        page.add_css_class(f'stats-visual-page-box-{category}s')
+
+        # title
+        page_title = Gtk.Label(label=f'Your top {category}s')
+        page_title.add_css_class('stats-visual-page-title')
+        page.append(page_title)
+
+        # top x boxes
+        for idx, itm in enumerate(data, start=1):
+            val = itm.get(category, '')
+            art = itm.get('album_art', '')
+            artist = itm.get('artist', '')
+
+            # item box
+            item_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+            item_box.set_size_request(-1, 50)
+            item_box.set_halign(Gtk.Align.CENTER)
+            item_box.set_valign(Gtk.Align.CENTER)
+            item_box.add_css_class('top-x-item-box')
+
+            # left: item number
+            item_num = Gtk.Label(label=str(idx))
+            item_num.set_size_request(30, -1)
+            item_num.set_halign(Gtk.Align.CENTER)
+            item_num.set_valign(Gtk.Align.CENTER)
+            item_num.add_css_class('top-x-item-num')
+            item_box.append(item_num)
+
+            # middle: album cover
+            art_container = Gtk.Box()
+            art_container.set_size_request(40, 40)
+            art_container.set_halign(Gtk.Align.CENTER)
+            art_container.set_valign(Gtk.Align.CENTER)
+
+            if art and os.path.exists(art):
+                album_art_img = Gtk.Picture.new_for_filename(art)
+                album_art_img.set_content_fit(Gtk.ContentFit.COVER)
+                album_art_img.add_css_class('top-x-album-art')
+                art_container.append(album_art_img)
+            else:
+                art_container.add_css_class('top-x-album-art-missing')
+
+            item_box.append(art_container)
+
+            # right: val + artist
+            text_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
+            text_box.set_halign(Gtk.Align.START)
+            text_box.set_valign(Gtk.Align.CENTER)
+
+            val_label = Gtk.Label(label=val)
+            val_label.set_xalign(0.0)
+            val_label.set_ellipsize(Pango.EllipsizeMode.END)
+            val_label.set_max_width_chars(25)
+            val_label.add_css_class('top-x-item-value')
+            text_box.append(val_label)
+
+            if artist and category != 'artist':
+                artist_label = Gtk.Label(label=artist)
+                artist_label.set_xalign(0.0)
+                artist_label.set_ellipsize(Pango.EllipsizeMode.END)
+                artist_label.set_max_width_chars(25)
+                artist_label.add_css_class('top-x-item-artist')
+                text_box.append(artist_label)
+
+            item_box.append(text_box)
+            page.append(item_box)
+
+        return page
+          
+    def _create_visual_mode_summary_page(self, data: dict) -> Gtk.Box:
+        """Creates a Spotify Wrapped-esque summary page"""
+        # setup
+        page = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+        page.set_halign(Gtk.Align.CENTER)
+        page.set_valign(Gtk.Align.CENTER)
+        page.add_css_class('stats-visual-page-box')
+        page.add_css_class('stats-visual-page-box-summary')
+
+        # cover art
+        if 'top_albums' in data and len(data['top_albums']) > 0:
+            cover_art = data['top_albums'][0]['album_art']
+
+            if cover_art and os.path.exists(cover_art):
+                album_art_img = Gtk.Picture.new_for_filename(cover_art)
+                album_art_img.set_size_request(100, 100)
+                album_art_img.set_content_fit(Gtk.ContentFit.COVER)
+                album_art_img.set_halign(Gtk.Align.CENTER)
+                album_art_img.set_valign(Gtk.Align.CENTER)
+                album_art_img.set_margin_bottom(20)
+                album_art_img.add_css_class('summary-album-art')
+                page.append(album_art_img)
+            else:
+                art_container = Gtk.Box()
+                art_container.set_size_request(100, 100)
+                art_container.set_halign(Gtk.Align.CENTER)
+                art_container.set_valign(Gtk.Align.CENTER)
+                art_container.set_margin_bottom(20)
+                art_container.add_css_class('summary-album-art-missing')
+                page.append(art_container)
+
+        # setup two-column layout
+        columns_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=30)
+        columns_box.set_halign(Gtk.Align.CENTER)
+        columns_box.set_valign(Gtk.Align.CENTER)
+
+        # left column: top artists
+        if 'top_artists' in data and len(data['top_artists']) > 0:
+            artists_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=5)
+            artists_box.set_halign(Gtk.Align.START)
+
+            artists_title = Gtk.Label(label="Top Artists")
+            artists_title.set_xalign(0.0)
+            artists_title.add_css_class('summary-column-title')
+            artists_box.append(artists_title)
+
+            for idx, artist_data in enumerate(data['top_artists'], start=1):
+                artist_name = artist_data.get('artist', '')
+                artist_label = Gtk.Label(label=f"{idx} {artist_name}")
+                artist_label.set_xalign(0.0)
+                artist_label.set_ellipsize(Pango.EllipsizeMode.END)
+                artist_label.set_max_width_chars(20)
+                artist_label.add_css_class('summary-list-item')
+                artists_box.append(artist_label)
+
+            columns_box.append(artists_box)
+
+        # right column: top songs
+        if 'top_songs' in data and len(data['top_songs']) > 0:
+            songs_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=5)
+            songs_box.set_halign(Gtk.Align.START)
+
+            songs_title = Gtk.Label(label="Top Songs")
+            songs_title.set_xalign(0.0)
+            songs_title.add_css_class('summary-column-title')
+            songs_box.append(songs_title)
+
+            for idx, song_data in enumerate(data['top_songs'], start=1):
+                song_name = song_data.get('song', '')
+                song_label = Gtk.Label(label=f"{idx} {song_name}")
+                song_label.set_xalign(0.0)
+                song_label.set_ellipsize(Pango.EllipsizeMode.END)
+                song_label.set_max_width_chars(20)
+                song_label.add_css_class('summary-list-item')
+                songs_box.append(song_label)
+
+            columns_box.append(songs_box)
+
+        page.append(columns_box)
+
+        # minutes listened
+        if 'total_listened_mins' in data:
+            mins_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
+            mins_box.set_halign(Gtk.Align.START)
+            mins_box.set_margin_top(15)
+
+            mins_label = Gtk.Label(label="Minutes Listened")
+            mins_label.set_xalign(0.0)
+            mins_label.add_css_class('summary-mins-label')
+            mins_box.append(mins_label)
+
+            mins_value = Gtk.Label(label=f"{data['total_listened_mins']:,}")
+            mins_value.set_xalign(0.0)
+            mins_value.add_css_class('summary-mins-value')
+            mins_box.append(mins_value)
+
+            page.append(mins_box)
+
+        return page      
+            
+    def _create_visual_mode_pages(self, results: dict) -> List[Gtk.Box]:
+        """Creates Spotify Wrapped-esque views of the given stats."""
+        # setup + reformat results
+        pages = []
+        data = {}
+        for category, res in results['data'].items():
+            if category == 'total_listened_mins':
+                data[category] = res
+                continue
+            
+            data[category] = results['data'][category][:self.DEFAULT_MAX]
+                       
+        # summary page
+        pages.append(
+            self._create_visual_mode_summary_page(data))
+                     
+        # 'Top Artists' page
+        if 'top_artists' in data:
+            pages.append(
+                self._create_visual_mode_list_page('artist', data['top_artists']))
+                        
+        # 'Top Albums' page
+        if 'top_albums' in data:
+            pages.append(
+                self._create_visual_mode_list_page('album', data['top_albums']))
+                        
+        # 'Top Songs' page
+        if 'top_songs' in data:
+            pages.append(
+                self._create_visual_mode_list_page('song', data['top_songs']))
+                        
+        # 'Top Genres' page
+        if 'top_genres' in data:
+            pages.append(
+                self._create_visual_mode_list_page('genre', data['top_genres']))
+        
+        return pages
+    
+    def _visual_mode_stats_view(self, results: dict) -> Adw.Carousel:
+        """Creates multiple Spotify Wrapped-esque views of the given results.
+        Multiple pages displaying the different results"""
+        # setup carousel
+        car = Adw.Carousel()
+        car.set_allow_scroll_wheel(True)
+        car.set_allow_mouse_drag(True)
+        car.set_allow_long_swipes(True)
+        car.set_spacing(10)
+        
+        # add pages
+        pages = self._create_visual_mode_pages(results)
+        [car.append(page) for page in pages]
+        
+        return car
     
     def _show_stats(self, stats_pane: Gtk.Box, db_info: dict) -> None:
         """Calculates stats based on self.filters and displays them
@@ -294,27 +550,31 @@ class StatsFilters:
         mode = self.filters['mode']
         self._clear_pane(stats_pane)
         
-        # nerd mode -- json
         if mode == 'nerd':
+            # nerd mode -- json
             source_view = self._nerd_mode_stats_view(results)
             stats_pane.append(source_view)
         else:
-            # TODO: add visual mode
-            # visual mode -- graphic
-            pass
+            # visual mode -- carousel
+            carousel = self._visual_mode_stats_view(results)
+            indicator_dots = Adw.CarouselIndicatorDots()
+            indicator_dots.set_carousel(carousel)
 
+            stats_pane.append(carousel)
+            stats_pane.append(indicator_dots)
+            
     def create_wrapped_box(self, stats_pane: Gtk.Box, db_info: dict) -> Gtk.Box:
         """Creates a box with all the Wrapped page filters
         and displays the search results in the given stats pane"""
         # setup
         box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         box.add_css_class('stats-pg-filters')
-        
+
         # add sub-boxes
         metadata_box = self._create_metadata_filter_box()
-        stat_filter_box = self._create_stat_filter_box()
+        self.stat_filter_box = self._create_stat_filter_box()
         box.append(metadata_box)
-        box.append(stat_filter_box)
+        box.append(self.stat_filter_box)
         
         # button
         generate_btn = Gtk.Button()

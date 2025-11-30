@@ -370,3 +370,102 @@ headerbar viewswitcher label {
 .generated-stats-pane {
     background-color: #1b1b1e;
 }
+
+.stats-visual-page-box {
+    padding: 20px;
+    border-radius: 8px;
+}
+
+.stats-visual-page-box-summary {
+    /* background: linear-gradient(135deg, #4A90E2 0%, #E94B8F 40%, #F39C6B 70%, #F5D76E 100%); */
+    background-color: #FFB3D5;
+}
+
+.stats-visual-page-box-artists {
+    background-color: #6B9EFF;
+}
+
+.stats-visual-page-box-albums {
+    background-color: #e4d00a;
+}
+
+.stats-visual-page-box-genres {
+    background-color: #0AE463;
+}
+
+.stats-visual-page-box-songs {
+    background-color: #FF6BAC;
+}
+
+.stats-visual-page-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #1b1b1e;
+    margin-bottom: 15px;
+}
+
+.summary-album-art {
+    border-radius: 2px;
+}
+
+.summary-album-art-missing {
+    background-color: #2a2a2e;
+    border-radius: 2px;
+}
+
+.summary-column-title {
+    font-size: 14px;
+    font-weight: 900;
+    color: #1b1b1e;
+    margin-bottom: 8px;
+}
+
+.summary-list-item {
+    font-size: 11px;
+    font-weight: 500;
+    color: #1b1b1e;
+}
+
+.summary-mins-label {
+    font-size: 11px;
+    font-weight: 900;
+    color: #1b1b1e;
+}
+
+.summary-mins-value {
+    font-size: 26px;
+    font-weight: 700;
+    color: #1b1b1e;
+}
+
+.top-x-item-box {
+    background-color: transparent;
+}
+
+.top-x-item-num {
+    color: #1b1b1e;
+    font-size: 20px;
+    font-weight: 700;
+    border-radius: 4px;
+}
+
+.top-x-album-art {
+    border-radius: 4px;
+}
+
+.top-x-album-art-missing {
+    background-color: #2a2a2e;
+    border-radius: 4px;
+}
+
+.top-x-item-value {
+    font-size: 12px;
+    font-weight: 600;
+    color: #1b1b1e;
+}
+
+.top-x-item-artist {
+    font-size: 10px;
+    font-weight: 400;
+    color: #3a3a3e;
+}
