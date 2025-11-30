@@ -10,6 +10,7 @@ from backend import find_top_genres, find_top_artists, find_top_albums, find_top
 # TODO: 
 # - add clear button to date range
 # - double check stats math
+# - change title entry to on-changed vs on-activated
 
 class StatsFilters:
     """Represents a set of stats filters/entries to

@@ -18,34 +18,39 @@ class WrappedPage(Gtk.ScrolledWindow):
         self.db_path = db_path
         self.album_art_dir = album_art_dir
         self.stats_filter = StatsFilters()
-        
+
         self.add_css_class('page-area')
         self.add_css_class('wrapped-page')
+        self.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.NEVER)
+
         paned = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL)
         
         # paned - right
         sw_right = Gtk.ScrolledWindow()
         sw_right.set_policy(Gtk.PolicyType.NEVER,Gtk.PolicyType.AUTOMATIC)
         sw_right.add_css_class('generated-stats-scrolled')
-        
+        sw_right.set_hexpand(True)
+        sw_right.set_vexpand(True)
+
         self.right_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-        self.right_box.set_size_request(375, -1)
         self.right_box.add_css_class('generated-stats-pane')
         sw_right.set_child(self.right_box)
         
         # paned - left
         sw_left = Gtk.ScrolledWindow()
         sw_left.set_policy(Gtk.PolicyType.NEVER,Gtk.PolicyType.AUTOMATIC)
+        sw_left.set_hexpand(True)
+        sw_left.set_vexpand(True)
         sw_left.set_child(self.stats_filter.create_wrapped_box(
             self.right_box, {'db_type': self.db_type, 'db_path': self.db_path}
         ))
-        
+
         # finish paned setup
         paned.set_start_child(sw_left)
         paned.set_end_child(sw_right)
         paned.set_position(400)
         paned.set_resize_start_child(True)
-        paned.set_resize_end_child(False)
+        paned.set_resize_end_child(True)
         paned.set_shrink_start_child(False)
         paned.set_shrink_end_child(False)
         
