@@ -10,7 +10,16 @@ __pycache__
 scratch*
 .vscode/
 *.sh
+total_plays.csv
+album_art/
+*.backup
+.claude/
+*.txt
+ipod_wrapped.db
 
 # extremely rough, still working on
 playlist-maker/*
-guide-docs/*
+guide-docs/
+helpers/
+gtk_app4.py
+music_player.py
