@@ -9,7 +9,7 @@ song_extensions = ['.mp3', '.flac', '.ogg', '.wav', '.m4a']
 # storage paths
 STORAGE_DIR = 'storage'
 DEFAULT_DB_PATH = os.path.join(STORAGE_DIR, 'ipod_wrapped.db')
-DEFAULT_ALBUM_ART_DIR = os.path.join(STORAGE_DIR, 'album-art')
+DEFAULT_ALBUM_ART_DIR = os.path.join(STORAGE_DIR, 'album_art')
 
 # lastfm
 lastfm_root = 'http://ws.audioscrobbler.com'

@@ -481,14 +481,14 @@ class LogAnalyser:
 
 
     def df_to_file(self, df: Optional[pl.DataFrame] = None,
-                   output_file: str = 'sample-files/ipod_log.csv') -> None:
+                   output_file: str = 'sample_files/ipod_log.csv') -> None:
         """Writes the given dataframe, or the log dataframe, to the given
         output file.
 
         Args:
             df (pl.DataFrame, optional): The dataframe to write. Defaults to None.
             output_file (str, optional): Where to write the df to.
-                                        Defaults to 'sample-files/ipod_log.csv'.
+                                        Defaults to 'sample_files/ipod_log.csv'.
         """
         if df is None:
             df = self.log_df
