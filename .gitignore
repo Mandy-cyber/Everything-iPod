@@ -10,7 +10,6 @@ __pycache__
 .env
 scratch*
 .vscode/
-*.sh
 total_plays.csv
 album_art/
 *.backup
@@ -24,3 +23,6 @@ guide-docs/
 helpers/
 gtk_app4.py
 music_player.py
+convttf.sh
+*.log
+playlist_maker.sh
