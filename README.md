@@ -6,7 +6,13 @@
 - [iPod Wrapped](#ipod-wrapped)
     - [Requirements](#requirements)
     - [Getting Started](#getting-started)
-    - [FAQs](#faqs)
+- [Utility Scripts](#utility-scripts)
+    - [`album_art_fixer.py`](#album_art_fixerpy)
+    - [`sync_ipod.sh`](#sync_ipodsh)
+    - [`reload_theme.sh`](#reload_themesh)
+    - [`update_album_genres.py`](#update_album_genrespy)
+- [FAQs](#faqs)
+
 <!-- END OF MDTOC -->
 
 <br>
@@ -45,6 +51,42 @@ Now, you're ready to run the iPod Wrapped app! Listen to some music first with l
 
 4. "Start Wrapped" and have fun!!
 
+<br>
 
-## FAQs
+# Utility Scripts
+A collection of scripts that do random helpful things
+
+## `album_art_fixer.py`
+This is **not** my code! Full credit goes to [Xpl0itU](https://github.com/Xpl0itU/rockbox_scripts/blob/master/album_art_fix.py). I just use the script in the *sync_ipod.sh* logic.
+
+## `sync_ipod.sh`
+Syncs your local music directory with your iPod's. First extracts art covers from each album, before syncing the music and covers.
+
+**Usage**
+```bash
+./sync_ipod.sh /path/to/local/Music/dir/ /path/to/iPod/Music/dir/
+```
+
+## `reload_theme.sh`
+Reloads your rockbox UI simulator with the theme being developed in *./rockbox-theme*.
+
+**Usage**
+```bash
+# adjust your env variables or dirs set in reload_theme.sh first
+# TODO: accept args
+./reload_theme.sh
+```
+
+## `update_album_genres.py`
+Manually update albums missing genre information in your iPod Wrapped db. Eventually this functionality will be added to the UI. Till then:
+
+**Usage**
+```bash
+# edit the ALBUMS_WITH_GENRES list at the top of the file, then
+python update_album_genres.py
+```
+
+<br>
+
+# FAQs
 Ask me stuff so I have stuff to put here <3
