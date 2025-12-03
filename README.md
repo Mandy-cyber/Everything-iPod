@@ -61,6 +61,11 @@ Now, you're ready to run the iPod Wrapped app! Listen to some music first with l
 
 A custom rockbox theme I drew and coded to act as a 'love letter' to physical media. It adjusts the main, while-playing, and USB, screens to look as follows:
 
+<img width="320" height="240" alt="2" src="https://github.com/user-attachments/assets/a65e44be-ee63-485f-84b4-b21921b64a0c" />
+<img width="320" height="240" alt="1" src="https://github.com/user-attachments/assets/a2afede1-63bd-483e-91a4-c38d25e18e2f" />
+<img width="320" height="240" alt="3" src="https://github.com/user-attachments/assets/cd9f0248-4880-4d27-9b35-5b43956a5fb5" />
+<br>
+
 **Usage**
 ```bash
 # copy the theme over to your iPod
