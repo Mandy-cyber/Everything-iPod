@@ -16,6 +16,7 @@ album_art/
 *.txt
 ipod_wrapped.db
 convttf.sh
+*.log
 
 # extremely rough, still working on
 guide-docs/
