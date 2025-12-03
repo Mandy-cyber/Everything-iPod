@@ -19,8 +19,11 @@
 # Font Definitions
 %Fl(2,16-Adobe-Helvetica-AF.fnt)
 
-# Hide the default status bar
+# Status Bar Off
 %wd
+
+# Title Bar Off
+%?Lt<|>
 
 #-----------------------------------------
 # TOP BAR
@@ -51,22 +54,29 @@
 %Vf(6D4C3DFF)
 
 #-----------------------------------------
-# USB SCREEN
-#-----------------------------------------
-# USB
-%?if(%cs, =, 21)<%Vd(usb)|>
-
-%Vl(usb,0,0,320,240,-)
-%xd(U)
-
-#-----------------------------------------
 # LOCK SCREEN
 #-----------------------------------------
-# Lock Screen
-%?mh<%Vd(lockscreen)|>
+#%?mh<%Vd(lockscreen)|>
 
-%Vl(lockscreen,0,0,320,240,-)
-%xd(L)
+# Clear Screen
+#%Vl(lockscreen,0,0,320,240,-)
+#%xd(L)
+
+# Load BG Image + Cover Art
+#%V(200,100,100,100,-)
+#%Cd
+#%Vi(lockscreen,0,0,0,0,-)
+
+#-----------------------------------------
+# USB SCREEN
+#-----------------------------------------
+%?if(%cs, =, 21)<%Vd(usbScreen)|>
+
+# Clear Screen
+%Vl(usbScreen,0,0,320,240,-)
+
+# Load BG Image
+%xd(U)
 
 #-----------------------------------------
 # QUICK SCREEN

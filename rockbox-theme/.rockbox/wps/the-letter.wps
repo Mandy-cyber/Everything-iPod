@@ -18,6 +18,7 @@
 %xl(C,stop.bmp)
 %xl(D,shuffle.bmp)
 %xl(E,repeat.bmp)
+%xl(L,lock_screen.bmp)
 
 # Font Definitions
 %Fl(2,12-Adobe-Helvetica-AF.fnt)
@@ -100,3 +101,12 @@
 %V(282,215,28,20,1)
 %Vf(000000)
 %ar%pr
+
+#-----------------------------------------
+# LOCK SCREEN
+#-----------------------------------------
+#%?mh<%Vd(lockscreen)|>
+
+# Clear Screen
+#%Vl(lockscreen,0,0,320,240,-)
+#%xd(L)
