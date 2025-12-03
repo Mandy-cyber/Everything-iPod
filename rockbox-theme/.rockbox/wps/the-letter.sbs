@@ -1,0 +1,84 @@
+# The Letter - Status Bar Screen
+# Displays in menus and browsers
+# Author: Mandy-Cyber
+# Version: 1.0
+
+# Background Image
+%X(letter_home_screen.bmp)
+
+#-----------------------------------------
+# PRELOADING & SETUP
+#-----------------------------------------
+# Preload Cover Art
+%Cl(0,0,45,45)
+
+# Preload Screen Images
+%xl(U,usb_screen.bmp)
+%xl(L,lock_screen.bmp)
+
+# Font Definitions
+%Fl(2,16-Adobe-Helvetica-AF.fnt)
+
+# Status Bar Off
+%wd
+
+# Title Bar Off
+%?Lt<|>
+
+#-----------------------------------------
+# TOP BAR
+#-----------------------------------------
+# iPod Text
+%V(20,8,30,30,1)
+%al iPod
+
+# Clock
+%V(145,8,30,30,1)
+%ac%cH:%cM
+
+# Battery
+%V(280,8,30,30,1)
+%ar%bl%%
+
+#-----------------------------------------
+# ALBUM ART DISPLAY
+#-----------------------------------------
+%V(256,39,45,45,1)
+%Cd
+
+#-----------------------------------------
+# BROWSING
+#-----------------------------------------
+# Menu list
+%Vi(-,30,50,170,180,2)
+%Vf(6D4C3DFF)
+
+#-----------------------------------------
+# LOCK SCREEN
+#-----------------------------------------
+#%?mh<%Vd(lockscreen)|>
+
+# Clear Screen
+#%Vl(lockscreen,0,0,320,240,-)
+#%xd(L)
+
+# Load BG Image + Cover Art
+#%V(200,100,100,100,-)
+#%Cd
+#%Vi(lockscreen,0,0,0,0,-)
+
+#-----------------------------------------
+# USB SCREEN
+#-----------------------------------------
+%?if(%cs, =, 21)<%Vd(usbScreen)|>
+
+# Clear Screen
+%Vl(usbScreen,0,0,320,240,-)
+
+# Load BG Image
+%xd(U)
+
+#-----------------------------------------
+# QUICK SCREEN
+#-----------------------------------------
+# TODO: come back
