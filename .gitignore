@@ -15,7 +15,8 @@ album_art/
 *.backup
 .claude/
 *.txt
-ipod_wrapped.db
+*.db
+*.log
 
 # extremely rough, still working on
 playlist-maker/*

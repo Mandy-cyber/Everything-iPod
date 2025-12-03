@@ -645,6 +645,7 @@ all_genres = set([
     "psychedelia",
     "psychedelic",
     "psychedelic folk",
+    "psychedelic pop",
     "psychedelic rock",
     "psychedelic trance",
     "psychill",
