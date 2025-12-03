@@ -20,6 +20,7 @@
 # iPod Wrapped
 
 This is my silly little attempt to recreate Spotify Wrapped for iPod music listening. It's a GTK4 app to sync your listening history and generate Spotify Wrapped-esque stats for whatever time range you please.
+<img width="670" height="526" alt="image" src="https://github.com/user-attachments/assets/1eba74db-6477-45e1-92b5-ea5273f07c45" />
 
 ## Requirements
 
