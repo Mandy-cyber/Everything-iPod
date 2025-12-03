@@ -1,7 +1,8 @@
 # The Letter - Status Bar Screen
-# Displays in menus and browsers
-# Author: Mandy-Cyber
-# Version: 1.0
+# Version: 1.0 (Dec 3, 2025)
+# License: CC-BY-SA
+# Author: https://github.com/Mandy-cyber
+# Platform: iPod Classic/Video (320x240)
 
 # Background Image
 %X(letter_home_screen.bmp)
@@ -21,9 +22,6 @@
 
 # Status Bar Off
 %wd
-
-# Title Bar Off
-%?Lt<|>
 
 #-----------------------------------------
 # TOP BAR
