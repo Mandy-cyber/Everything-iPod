@@ -14,6 +14,8 @@
     - [`update_album_genres.py`](#update_album_genrespy)
 - [FAQs](#faqs)
 - [TODO](#todo)
+    - [ipod_wrapped](#ipod_wrapped)
+    - [rockbox_theme](#rockbox_theme)
 
 <!-- END OF MDTOC -->
 
@@ -118,6 +120,7 @@ Ask me stuff so I have stuff to put here <3
 
 # TODO
 
+## ipod_wrapped
 - [ ] Accept args for reload_theme.sh script
 - [ ] Add functionality to update album genres in the UI (currently only via utility script)
 - [ ] Come back to rockbox theme .sbs file (line 84)
@@ -130,3 +133,7 @@ Ask me stuff so I have stuff to put here <3
 - [ ] Fix 'sorter' not bringing user back to top of table in songs page
 - [ ] Fix wonky resizing in songs page
 - [ ] Add right click menu with 'add to queue' and 'play next' options for genre songs
+
+### rockbox_theme
+- [ ] Fix and uncomment "the letter" lockscreen
+- [ ] Create a vinyl theme
