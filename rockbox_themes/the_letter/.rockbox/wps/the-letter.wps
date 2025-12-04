@@ -1,7 +1,8 @@
 # The Letter - While Playing Screen
-# Theme for iPod Classic 5th Gen (320x240)
-# Author: Mandy-cyber
-# Version: 1.0
+# Version: 1.0 (Dec 3, 2025)
+# License: CC-BY-SA
+# Author: https://github.com/Mandy-cyber
+# Platform: iPod Classic/Video (320x240)
 
 # Background Image
 %X(wps_letter_art.bmp)
@@ -110,4 +111,3 @@
 # Clear Screen
 #%Vl(lockscreen,0,0,320,240,-)
 #%xd(L)
-
