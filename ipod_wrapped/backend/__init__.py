@@ -21,6 +21,7 @@ from .wrapped_helpers import (
 )
 from .album_art_fixer import process_images, organize_music_files, clear_temp_directory
 from .constants import *
+from .creds_manager import save_credentials, get_credentials, has_credentials, delete_credentials
 
 __all__ = [
     'LogAnalyser',
@@ -42,5 +43,9 @@ __all__ = [
     'find_top_albums',
     'find_top_songs',
     'load_stats_from_db',
-    'get_total_listening_time'
+    'get_total_listening_time',
+    'save_credentials',
+    'get_credentials',
+    'has_credentials',
+    'delete_credentials'
 ]

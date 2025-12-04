@@ -32,17 +32,7 @@ This is my silly little attempt to recreate Spotify Wrapped for iPod music liste
 
 2. **Logging** needs to be enabled on your iPod. Go to `Settings > Playback Settings > Logging > On`
 
-3. Create a `.env` file in the `ipod_wrapped` directory, and add the necessary values.
-```bash
-# last.fm api 
-# (will eventually not require individual users to have their own)
-LASTFM_API_KEY=
-LASTFM_SHARED_SECRET=
-
-# (optional) mongo
-# things only stored in mongo if you adjust the code, will add UI enabling later
-MONGODB_URI=
-```
+3. Last.fm API credentials, which you can get for free [here](https://www.last.fm/api)
 
 ## Getting Started
 
@@ -50,11 +40,9 @@ Now, you're ready to run the iPod Wrapped app! Listen to some music first with l
 
 1. In `ipod_wrapped/` run `python main.py`
 
-2. Make sure your iPod is plugged in to your laptop and accessible in the filesystem
+2. Follow the popup instructions
 
-3. Open the *sync* pop-up. Click the menu icon and then the sync icon.
-
-4. "Start Wrapped" and have fun!!
+3. "Start Wrapped" and have fun!!
 
 <br>
 
@@ -125,17 +113,19 @@ Ask me stuff so I have stuff to put here <3
 # TODO
 
 ## ipod_wrapped
-- [ ] Proper 'Getting Started' page
-- [ ] Pass in Last.fm keys in UI
+- [x] Proper 'Getting Started' page
+- [x] Pass in Last.fm keys in UI
+- [ ] Add/Adjust logging
 - [ ] Add functionality to update album genres in the UI (currently only via utility script)
 - [ ] Add proper rate limiting logic for log analysis
-- [ ] Implement light mode logic for GTK styling
+- [ ] Disable light mode LOL
+- [ ] Fix 'sorter' not bringing user back to top of table in songs page
+- [ ] Fix wonky resizing in songs page
+
 - [ ] Add music player functionality
 - [ ] On bottom bar click, show expanded view
 - [ ] Add currently playing UI elements to bottom bar
 - [ ] Implement bottom bar stub methods
-- [ ] Fix 'sorter' not bringing user back to top of table in songs page
-- [ ] Fix wonky resizing in songs page
 - [ ] Add right-click menu with 'add to queue' and 'play next' options for genre songs
 
 ### rockbox_theme

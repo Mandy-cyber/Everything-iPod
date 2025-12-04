@@ -6,3 +6,4 @@ pymongo
 Pillow
 mutagen
 typer
+keyring

@@ -1,21 +1,22 @@
 import gi
 gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
-from typing import Optional, Callable
+from typing import Optional, Callable, Tuple
 from gi.repository import Gtk, Adw, GLib
 
 from .sync_box import create_sync_box_widgets
+from .settings import create_settings_dialog
 
 def create_menu_nav(overlay: Gtk.Overlay, window: Gtk.ApplicationWindow,
                     error_banner: Optional[Adw.Banner] = None, success_banner: Optional[Adw.Banner] = None,
-                    refresh_callback: Optional[Callable] = None) -> Gtk.Button:
+                    refresh_callback: Optional[Callable] = None) -> Tuple[Gtk.Button, Callable]:
     """Creates a floating nav icon/button to show:
     - About
     - Start Wrapped
-    - _______
+    - Settings
 
     Returns:
-        Gtk.Button: The floating nav button
+        Tuple[Gtk.Button, Callable]: nav button, start wrapped dialog opener
     """
     # main icon
     menu_btn = Gtk.Button()
@@ -35,7 +36,12 @@ def create_menu_nav(overlay: Gtk.Overlay, window: Gtk.ApplicationWindow,
     overlay.add_overlay(extended)
 
     menu_btn.connect('clicked', lambda btn: _open_menu_nav(extended))
-    return menu_btn
+
+    def open_start_wrapped() -> None:
+        # slightly jank callback to open 'Start Wrapepd' dialog externally
+        _open_start_wrapped_dialog(window, error_banner, success_banner, refresh_callback, extended)
+
+    return menu_btn, open_start_wrapped
     
 def _create_extended_menu_nav(window: Gtk.ApplicationWindow,
                               error_banner: Optional[Adw.Banner], success_banner: Optional[Adw.Banner],
@@ -62,8 +68,18 @@ def _create_extended_menu_nav(window: Gtk.ApplicationWindow,
     start_btn.add_css_class('circular')
     start_btn.add_css_class('nav-start-icon')
     start_btn.set_can_focus(False)
-    start_btn.connect('clicked', lambda btn: _open_start_wrapped_dialogue(window, error_banner, success_banner, refresh_callback, revealer))
+    start_btn.connect('clicked', lambda btn: _open_start_wrapped_dialog(window, error_banner, success_banner, refresh_callback, revealer))
     btn_box.append(start_btn)
+    
+    # settings button
+    settings_btn = Gtk.Button()
+    settings_btn.set_icon_name('preferences-system-symbolic')
+    settings_btn.add_css_class('flat')
+    settings_btn.add_css_class('circular')
+    settings_btn.add_css_class('nav-settings-icon')
+    settings_btn.set_can_focus(False)
+    settings_btn.connect('clicked', lambda btn: _open_settings_dialog(window, error_banner, success_banner, revealer))
+    btn_box.append(settings_btn)
 
     # about button
     about_btn = Gtk.Button()
@@ -72,11 +88,10 @@ def _create_extended_menu_nav(window: Gtk.ApplicationWindow,
     about_btn.add_css_class('circular')
     about_btn.add_css_class('nav-about-icon')
     about_btn.set_can_focus(False)
-    about_btn.connect('clicked', lambda btn: _open_about_dialogue(window, revealer))
+    about_btn.connect('clicked', lambda btn: _open_about_dialog(window, revealer))
     btn_box.append(about_btn)
 
     return revealer
-
 
 def _open_menu_nav(revealer: Gtk.Revealer) -> None:
     """Reveals the other floating navs"""
@@ -89,13 +104,25 @@ def _open_menu_nav(revealer: Gtk.Revealer) -> None:
         # show first, then reveal
         revealer.set_visible(True)
         revealer.set_reveal_child(True)
+
+def _open_settings_dialog(window: Gtk.ApplicationWindow,
+                            error_banner: Optional[Adw.Banner],
+                            success_banner: Optional[Adw.Banner],
+                            revealer: Gtk.Revealer) -> None:
+    """Opens the Settings dialog"""
+    # close menu first
+    _open_menu_nav(revealer)
     
-def _open_about_dialogue(window: Gtk.ApplicationWindow, revealer: Gtk.Revealer) -> None:
-    """Opens the 'About' dialogue"""
+    # create and display dialog
+    dialog = create_settings_dialog(window, error_banner, success_banner)
+    dialog.present(window)
+    
+def _open_about_dialog(window: Gtk.ApplicationWindow, revealer: Gtk.Revealer) -> None:
+    """Opens the 'About' dialog"""
     # close menu first
     _open_menu_nav(revealer)
 
-    # create dialogue
+    # create dialog
     about_dialog = Adw.AboutDialog()
     about_dialog.set_application_name("iPod Wrapped")
     about_dialog.set_developer_name("Mandy-cyber")
@@ -106,25 +133,25 @@ def _open_about_dialogue(window: Gtk.ApplicationWindow, revealer: Gtk.Revealer) 
     about_dialog.set_license_type(Gtk.License.GPL_3_0)
     about_dialog.present(window)
 
-def _open_start_wrapped_dialogue(window: Gtk.ApplicationWindow,
+def _open_start_wrapped_dialog(window: Gtk.ApplicationWindow,
                                  error_banner: Optional[Adw.Banner], success_banner: Optional[Adw.Banner],
                                  refresh_callback: Optional[Callable], revealer: Gtk.Revealer) -> None:
-    """Opens the 'Start iPod Wrapped' dialogue"""
+    """Opens the 'Start iPod Wrapped' dialog"""
     # close menu first
     _open_menu_nav(revealer)
 
-    # create dialogue
+    # create dialog
     dialog = Adw.Dialog()
     dialog.set_title("Get Started")
 
     # create content box
     content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=20)
-    content.set_margin_top(20)
+    content.set_margin_top(0)
     content.set_margin_bottom(20)
     content.set_margin_start(20)
     content.set_margin_end(20)
     content.set_halign(Gtk.Align.CENTER)
-    content.set_valign(Gtk.Align.CENTER)
+    content.set_valign(Gtk.Align.START)
     content.add_css_class('start-wrapped-box')
 
     # add sync box widgets

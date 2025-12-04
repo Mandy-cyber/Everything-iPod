@@ -13,6 +13,7 @@ from datetime import datetime
 
 from .constants import *
 from .constants import DEFAULT_DB_PATH
+from .creds_manager import get_credentials
 from .wrapped_helpers import (
     find_ipod, fix_filenames_in_db,
     find_top_genres, find_top_artists, find_top_albums, find_top_songs
@@ -25,8 +26,7 @@ from .schema import (
 
 load_dotenv()
 
-# TODO: 
-# - prevent duplicate play entries being added to db
+# TODO:
 # - display albums missing genre info
 
 class LogAnalyser:
@@ -59,12 +59,15 @@ class LogAnalyser:
             self.seen_songs.add(f"{entry['song']}:{entry['artist']}")
 
         # setup lastfm
-        try:
-            self.api_key = os.getenv('LASTFM_API_KEY')
-            self.shared_secret = os.getenv('LASTFM_SHARED_SECRET')
-        except Exception as e:
-            print(f"Could not analyze logs: {e}")
-            return
+        creds = get_credentials()
+        if not creds or not creds.get('last_fm'):
+            raise ValueError('Last.fm credentials are missing. Add them in Settings or in your local .env file')
+
+        self.api_key = creds['last_fm'].get('api_key')
+        self.shared_secret = creds['last_fm'].get('shared_secret')
+
+        if not self.api_key or not self.shared_secret:
+            raise ValueError('Last.fm API credentials not configured. Please add them in Settings.')
 
 
     def _setup_mongo(self):

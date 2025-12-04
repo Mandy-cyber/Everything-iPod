@@ -9,9 +9,11 @@ from .songs_table import create_songs_table, create_song_store, create_song_sele
 from .song_info import display_song_info
 from .menu_nav import create_menu_nav
 from .stats_filters import StatsFilters
+from .settings import create_settings_dialog
 
 __all__ = ['create_album_button', 'create_bottom_bar',
            'create_banner', 'show_banner', 'hide_banner', 'create_genre_tag',
            'create_curr_song_and_queue_view', 'create_songs_table',
            'create_song_store', 'create_song_selection_model', 'Song',
-           'display_song_info', 'create_menu_nav', 'StatsFilters']
+           'display_song_info', 'create_menu_nav', 'StatsFilters',
+           'create_settings_dialog']
