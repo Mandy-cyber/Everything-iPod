@@ -6,12 +6,16 @@
 - [iPod Wrapped](#ipod-wrapped)
     - [Requirements](#requirements)
     - [Getting Started](#getting-started)
+- ["The Letter"](#the-letter)
 - [Utility Scripts](#utility-scripts)
     - [`album_art_fixer.py`](#album_art_fixerpy)
     - [`sync_ipod.sh`](#sync_ipodsh)
     - [`reload_theme.sh`](#reload_themesh)
     - [`update_album_genres.py`](#update_album_genrespy)
 - [FAQs](#faqs)
+- [TODO](#todo)
+    - [ipod_wrapped](#ipod_wrapped)
+    - [rockbox_theme](#rockbox_theme)
 
 <!-- END OF MDTOC -->
 
@@ -54,6 +58,26 @@ Now, you're ready to run the iPod Wrapped app! Listen to some music first with l
 
 <br>
 
+# "The Letter"
+> N.B. Like most other rockbox themes, you'll need the default Rockbox font pack downloaded.
+
+A custom rockbox theme I drew and coded to act as a 'love letter' to physical media. It adjusts the main, while-playing, and USB, screens to look as follows:
+
+<img width="320" height="240" alt="2" src="https://github.com/user-attachments/assets/a65e44be-ee63-485f-84b4-b21921b64a0c" />
+<img width="320" height="240" alt="1" src="https://github.com/user-attachments/assets/a2afede1-63bd-483e-91a4-c38d25e18e2f" />
+<img width="320" height="240" alt="3" src="https://github.com/user-attachments/assets/cd9f0248-4880-4d27-9b35-5b43956a5fb5" />
+<br>
+
+**Usage**
+```bash
+# copy the theme over to your iPod
+cp -r rockbox-theme/.rockbox/. /path/to/iPod/.rockbox/dir
+```
+
+When I have figured out the lock screen, I will submit it to Rockbox's theme gallery for easier downloading & feedback <3. Also if you or someone you love are good with making custom themes PLEASE i have questions. Single-handedly hardest coding project I've attempted purely in terms of "where the hell is helpful documentation"... Yes I *have read the __outdated__ manual and wiki*.
+
+<br>
+
 # Utility Scripts
 A collection of scripts that do random helpful things
 
@@ -91,3 +115,25 @@ python update_album_genres.py
 
 # FAQs
 Ask me stuff so I have stuff to put here <3
+
+<br>
+
+# TODO
+
+## ipod_wrapped
+- [ ] Accept args for reload_theme.sh script
+- [ ] Add functionality to update album genres in the UI (currently only via utility script)
+- [ ] Come back to rockbox theme .sbs file (line 84)
+- [ ] Add proper rate limiting logic for log analysis
+- [ ] Implement light mode logic for GTK styling
+- [ ] Add music player functionality
+- [ ] On bottom bar click, show expanded view
+- [ ] Add currently playing UI elements to bottom bar
+- [ ] Implement bottom bar stub methods
+- [ ] Fix 'sorter' not bringing user back to top of table in songs page
+- [ ] Fix wonky resizing in songs page
+- [ ] Add right click menu with 'add to queue' and 'play next' options for genre songs
+
+### rockbox_theme
+- [ ] Fix and uncomment "the letter" lockscreen
+- [ ] Create a vinyl theme
