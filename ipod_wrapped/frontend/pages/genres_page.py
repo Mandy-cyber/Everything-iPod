@@ -15,6 +15,7 @@ class GenresPage(Gtk.ScrolledWindow):
         # setup
         self.TAG_SIZE = 50
         self.toggle_bottom_bar = toggle_bottom_bar_callback
+        self.open_start_wrapped = None
         self.db_type = db_type
         self.db_path = db_path
         self.album_art_dir = album_art_dir
@@ -45,8 +46,7 @@ class GenresPage(Gtk.ScrolledWindow):
         self.flowbox.set_column_spacing(0)
         self.flowbox.set_row_spacing(0)
         self.flowbox.set_homogeneous(True)
-        
-        self._load_genre_tags() # add genre tags
+
         sw_left.set_child(self.flowbox)
         
         # finish paned setup
@@ -71,9 +71,9 @@ class GenresPage(Gtk.ScrolledWindow):
                 album_art_dir=self.album_art_dir
             )
             
-        if len(genre_mappings) == 0 and self.toggle_bottom_bar:
-            # wait to toggle
-            GLib.idle_add(self.toggle_bottom_bar)
+        if len(genre_mappings) == 0 and self.open_start_wrapped:
+            # open 'Start Wrapped' popup
+            GLib.idle_add(self.open_start_wrapped)
         else:
             self.genre_mappings = sorted(genre_mappings, key=lambda d: d['genre'])
             # populate with genre tags
@@ -88,6 +88,11 @@ class GenresPage(Gtk.ScrolledWindow):
             if first_tag:
                 first_tag.emit('clicked')
                 
+    def set_start_wrapped_callback(self, callback) -> None:
+        """Set the callback to open the 'Start Wrapped' popup"""
+        self.open_start_wrapped = callback
+        self._load_genre_tags()
+
     def refresh(self) -> None:
         """Refresh the page by reloading genres from database"""
         # clear existing genre tags
@@ -96,6 +101,6 @@ class GenresPage(Gtk.ScrolledWindow):
             if child is None:
                 break
             self.flowbox.remove(child)
-            
+
         # reload tags
         self._load_genre_tags()

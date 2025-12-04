@@ -1,21 +1,21 @@
 import gi
 gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
-from typing import Optional, Callable
+from typing import Optional, Callable, Tuple
 from gi.repository import Gtk, Adw, GLib
 
 from .sync_box import create_sync_box_widgets
 
 def create_menu_nav(overlay: Gtk.Overlay, window: Gtk.ApplicationWindow,
                     error_banner: Optional[Adw.Banner] = None, success_banner: Optional[Adw.Banner] = None,
-                    refresh_callback: Optional[Callable] = None) -> Gtk.Button:
+                    refresh_callback: Optional[Callable] = None) -> Tuple[Gtk.Button, Callable]:
     """Creates a floating nav icon/button to show:
     - About
     - Start Wrapped
     - _______
 
     Returns:
-        Gtk.Button: The floating nav button
+        Tuple[Gtk.Button, Callable]: nav button, start wrapped dialog opener
     """
     # main icon
     menu_btn = Gtk.Button()
@@ -35,7 +35,12 @@ def create_menu_nav(overlay: Gtk.Overlay, window: Gtk.ApplicationWindow,
     overlay.add_overlay(extended)
 
     menu_btn.connect('clicked', lambda btn: _open_menu_nav(extended))
-    return menu_btn
+
+    def open_start_wrapped() -> None:
+        # slightly jank callback to open 'Start Wrapepd' dialog externally
+        _open_start_wrapped_dialogue(window, error_banner, success_banner, refresh_callback, extended)
+
+    return menu_btn, open_start_wrapped
     
 def _create_extended_menu_nav(window: Gtk.ApplicationWindow,
                               error_banner: Optional[Adw.Banner], success_banner: Optional[Adw.Banner],
