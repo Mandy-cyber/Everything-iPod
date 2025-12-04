@@ -3,6 +3,7 @@ import os
 
 # misc.
 BATCH_SIZE = 50
+SERVICE_NAME = 'ipod-wrapped'
 ipod_log_pattern = r'^(\d+):(\d+):(\d+):(.+)$'
 song_extensions = ['.mp3', '.flac', '.ogg', '.wav', '.m4a']
 
