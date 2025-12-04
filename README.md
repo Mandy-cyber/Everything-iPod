@@ -61,20 +61,24 @@ Now, you're ready to run the iPod Wrapped app! Listen to some music first with l
 # "The Letter"
 > N.B. Like most other rockbox themes, you'll need the default Rockbox font pack downloaded.
 
-A custom rockbox theme I drew and coded to act as a 'love letter' to physical media. It adjusts the main, while-playing, and USB, screens to look as follows:
+A custom rockbox theme I drew and coded to act as a 'love letter' to physical media. It adjusts the lockscreen, main, while-playing, and USB, screens to look as follows:
 
-<img width="320" height="240" alt="2" src="https://github.com/user-attachments/assets/a65e44be-ee63-485f-84b4-b21921b64a0c" />
-<img width="320" height="240" alt="1" src="https://github.com/user-attachments/assets/a2afede1-63bd-483e-91a4-c38d25e18e2f" />
-<img width="320" height="240" alt="3" src="https://github.com/user-attachments/assets/cd9f0248-4880-4d27-9b35-5b43956a5fb5" />
-<br>
+<img width="320" height="240" alt="lockscreen" src="https://github.com/user-attachments/assets/5fa989ba-2f62-4ded-bb42-7cef4dec633c" />
+<img width="320" height="240" alt="sbs" src="https://github.com/user-attachments/assets/436161b5-ecae-4415-a7ec-2e6aa72a8fde" />
+<img width="320" height="240" alt="wbs" src="https://github.com/user-attachments/assets/5e7880ee-3de1-449f-9f9d-7cb7763c376c" />
+<img width="320" height="240" alt="usb" src="https://github.com/user-attachments/assets/fd65bada-ab9c-4989-8e39-dc8f29a22a16" />
+
+<br><br>
 
 **Usage**
+
+Download [here](https://themes.rockbox.org/index.php?themeid=3910&target=ipod6g), or
 ```bash
 # copy the theme over to your iPod
-cp -r rockbox-theme/.rockbox/. /path/to/iPod/.rockbox/dir
+cp -r rockbox_themes/the_letter/.rockbox/. /path/to/iPod/.rockbox/dir
 ```
 
-When I have figured out the lock screen, I will submit it to Rockbox's theme gallery for easier downloading & feedback <3. Also if you or someone you love are good with making custom themes PLEASE i have questions. Single-handedly hardest coding project I've attempted purely in terms of "where the hell is helpful documentation"... Yes I *have read the __outdated__ manual and wiki*.
+The current rockbox theme doesn't have the lockscreen--I'll eventually reupload with the lockscreen and the quick screen (once I figure it out). Also if you or someone you love are good with making custom themes PLEASE i have questions. Single-handedly hardest coding project I've attempted purely in terms of "where the hell is helpful documentation"... Yes I *have read the __outdated__ manual and wiki*.
 
 <br>
 
@@ -121,9 +125,7 @@ Ask me stuff so I have stuff to put here <3
 # TODO
 
 ## ipod_wrapped
-- [ ] Accept args for reload_theme.sh script
 - [ ] Add functionality to update album genres in the UI (currently only via utility script)
-- [ ] Come back to rockbox theme .sbs file (line 84)
 - [ ] Add proper rate limiting logic for log analysis
 - [ ] Implement light mode logic for GTK styling
 - [ ] Add music player functionality
@@ -135,5 +137,9 @@ Ask me stuff so I have stuff to put here <3
 - [ ] Add right click menu with 'add to queue' and 'play next' options for genre songs
 
 ### rockbox_theme
-- [ ] Fix and uncomment "the letter" lockscreen
+- [x] Fix and uncomment "the letter" lockscreen
+- [ ] Add a quickscreen to "the letter"
 - [ ] Create a vinyl theme
+
+### utility_scripts
+- [ ] Accept args for all scripts instead of code editing
