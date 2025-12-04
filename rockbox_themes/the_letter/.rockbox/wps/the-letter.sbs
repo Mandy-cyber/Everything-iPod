@@ -1,5 +1,5 @@
 # The Letter - Status Bar Screen
-# Version: 1.0 (Dec 3, 2025)
+# Version: 1.1 (Dec 4, 2025)
 # License: CC-BY-SA
 # Author: https://github.com/Mandy-cyber
 # Platform: iPod Classic/Video (320x240)
@@ -54,16 +54,11 @@
 #-----------------------------------------
 # LOCK SCREEN
 #-----------------------------------------
-#%?mh<%Vd(lockscreen)|>
+%?mh<%Vd(lockscreen)|>
 
-# Clear Screen
-#%Vl(lockscreen,0,0,320,240,-)
-#%xd(L)
-
-# Load BG Image + Cover Art
-#%V(200,100,100,100,-)
-#%Cd
-#%Vi(lockscreen,0,0,0,0,-)
+# Clear Screen & Display BG
+%Vl(lockscreen,0,0,320,240,-)
+%xd(L)
 
 #-----------------------------------------
 # USB SCREEN
