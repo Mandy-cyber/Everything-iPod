@@ -1,0 +1,77 @@
+# The Letter - Status Bar Screen
+# Version: 1.1 (Dec 4, 2025)
+# License: CC-BY-SA
+# Author: https://github.com/Mandy-cyber
+# Platform: iPod Classic/Video (320x240)
+
+# Background Image
+%X(letter_home_screen.bmp)
+
+#-----------------------------------------
+# PRELOADING & SETUP
+#-----------------------------------------
+# Preload Cover Art
+%Cl(0,0,45,45)
+
+# Preload Screen Images
+%xl(U,usb_screen.bmp)
+%xl(L,lock_screen.bmp)
+
+# Font Definitions
+%Fl(2,16-Adobe-Helvetica-AF.fnt)
+
+# Status Bar Off
+%wd
+
+#-----------------------------------------
+# TOP BAR
+#-----------------------------------------
+# iPod Text
+%V(20,8,30,30,1)
+%al iPod
+
+# Clock
+%V(145,8,30,30,1)
+%ac%cH:%cM
+
+# Battery
+%V(280,8,30,30,1)
+%ar%bl%%
+
+#-----------------------------------------
+# ALBUM ART DISPLAY
+#-----------------------------------------
+%V(256,39,45,45,1)
+%Cd
+
+#-----------------------------------------
+# BROWSING
+#-----------------------------------------
+# Menu list
+%Vi(-,30,50,170,180,2)
+%Vf(6D4C3DFF)
+
+#-----------------------------------------
+# LOCK SCREEN
+#-----------------------------------------
+%?mh<%Vd(lockscreen)|>
+
+# Clear Screen & Display BG
+%Vl(lockscreen,0,0,320,240,-)
+%xd(L)
+
+#-----------------------------------------
+# USB SCREEN
+#-----------------------------------------
+%?if(%cs, =, 21)<%Vd(usbScreen)|>
+
+# Clear Screen
+%Vl(usbScreen,0,0,320,240,-)
+
+# Load BG Image
+%xd(U)
+
+#-----------------------------------------
+# QUICK SCREEN
+#-----------------------------------------
+# TODO: come back

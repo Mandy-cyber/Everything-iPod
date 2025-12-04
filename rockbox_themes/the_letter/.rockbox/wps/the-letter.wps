@@ -1,0 +1,104 @@
+# The Letter - While Playing Screen
+# Version: 1.1 (Dec 4, 2025)
+# License: CC-BY-SA
+# Author: https://github.com/Mandy-cyber
+# Platform: iPod Classic/Video (320x240)
+
+# Background Image
+%X(wps_letter_art.bmp)
+
+#-----------------------------------------
+# PRELOADING & SETUP
+#-----------------------------------------
+# Preload Cover Art
+%Cl(0,0,90,90)
+
+# Preload (other) Images
+#%xl(A,play.bmp)
+%xl(B,pause.bmp)
+%xl(C,stop.bmp)
+%xl(D,shuffle.bmp)
+%xl(E,repeat.bmp)
+%xl(L,lock_screen.bmp)
+
+# Font Definitions
+%Fl(2,12-Adobe-Helvetica-AF.fnt)
+
+# Hide the default status bar
+%wd
+
+#-----------------------------------------
+# TOP BAR
+#-----------------------------------------
+# Volume Text
+%V(20,8,35,30,1)
+%Vf(000000)
+%al%pvdB
+
+# Clock
+%V(145,8,30,30,1)
+%Vf(000000)
+%ac%cH:%cM
+
+# Battery
+%V(280,8,30,30,1)
+%Vf(000000)
+%ar%bl%%
+
+#-----------------------------------------
+# TRACK & NEXT TRACK INFO
+#-----------------------------------------
+# Current Track
+%V(160,95,80,50,1)
+%al%s%?it<%it|Unknown>
+%al%s%?id<%id|Unknown>
+%al%s%?ia<%ia|Unknown>
+
+# Track Position
+%V(160,147,80,20,2)
+%Vf(BA8F60)
+%al%pp/%pe
+
+# Next Track
+%V(50,179,190,30,2)
+%Vf(BA8F60)
+%alNext Track: %?It<%It|...> - %?Ia<%Ia|...>
+
+#-----------------------------------------
+# ALBUM ART DISPLAY
+#-----------------------------------------
+%V(53,73,90,90,1)
+%Cd
+
+#-----------------------------------------
+# ACTION ICONS
+#-----------------------------------------
+# Repeat
+%V(273,47,30,30,-)
+%?mm<|%xd(E)|%xd(E)||>
+
+# C=Stop | Don't display play icon | B=Pause
+%V(273,107,30,30,-)
+%?mp<%xd(C)||%xd(B)>
+
+# Shuffle
+%V(273,167,30,30,-)
+%?ps<%xd(D)||>
+
+#-----------------------------------------
+# PROGRESS BAR W/TIME DISPLAY
+#-----------------------------------------
+# Progress Bar
+%V(50,218,230,11,-)
+%pb(-,-,-,10,progress_bar.bmp)
+
+# Time Display
+# - current time
+%V(20,215,28,20,1)
+%Vf(000000)
+%al%pc
+
+# - time left
+%V(282,215,28,20,1)
+%Vf(000000)
+%ar%pr
