@@ -125,6 +125,8 @@ Ask me stuff so I have stuff to put here <3
 # TODO
 
 ## ipod_wrapped
+- [ ] Proper 'Getting Started' page
+- [ ] Pass in Last.fm keys in UI
 - [ ] Add functionality to update album genres in the UI (currently only via utility script)
 - [ ] Add proper rate limiting logic for log analysis
 - [ ] Implement light mode logic for GTK styling
@@ -134,7 +136,7 @@ Ask me stuff so I have stuff to put here <3
 - [ ] Implement bottom bar stub methods
 - [ ] Fix 'sorter' not bringing user back to top of table in songs page
 - [ ] Fix wonky resizing in songs page
-- [ ] Add right click menu with 'add to queue' and 'play next' options for genre songs
+- [ ] Add right-click menu with 'add to queue' and 'play next' options for genre songs
 
 ### rockbox_theme
 - [x] Fix and uncomment "the letter" lockscreen
