@@ -5,7 +5,6 @@ import json
 import subprocess
 import shutil
 import sqlite3
-import random
 from typing import Optional, List
 from pymongo import MongoClient
 from datetime import datetime
@@ -13,7 +12,7 @@ from collections import defaultdict
 from dotenv import load_dotenv
 
 from .album_art_fixer import process_images, organize_music_files, clear_temp_directory
-from .constants import DEFAULT_DB_PATH, DEFAULT_ALBUM_ART_DIR
+from .constants import DEFAULT_DB_PATH, DEFAULT_ALBUM_ART_DIR, SONG_EXTENSIONS
 
 load_dotenv()
 
@@ -34,6 +33,81 @@ def extract_song_path(full_path: str) -> str:
         return "/Music/" + full_path.split("/Music/", 1)[1]
     return ""
 
+
+def list_dir_song_paths(music_dir: str) -> List[str]:
+    """Returns a list of song paths starting from the given music directory"""
+    song_paths = []
+    for root, _, files in os.walk(music_dir):
+        for file in files:
+            for ext in SONG_EXTENSIONS:
+                if file.endswith(ext):
+                    song_paths.append(os.path.join(root, file))
+                    break
+                
+    return song_paths
+
+
+def extract_metadata_from_path(file_path: str) -> Optional[dict]:
+    """Extract song metadata from filesystem path
+
+    Args:
+        file_path (str): full path to the song file
+
+    Returns:
+        Optional[dict]: dict with song, artist, album, or None if invalid
+    """
+    try:
+        # check if it's in the Music directory
+        if "/Music/" not in file_path:
+            return None
+
+        path_sections = file_path.split('/Music/', 1)[1].split('/')
+
+        # need Artist, Album, & Track 
+        if len(path_sections) < 3:
+            return None
+
+        artist = path_sections[0].strip()
+        album = path_sections[1].strip()
+        track_filename = path_sections[2]
+
+        # check for valid extension
+        valid_ext = False
+        song_name = track_filename
+        for ext in SONG_EXTENSIONS:
+            if track_filename.endswith(ext):
+                valid_ext = True
+                song_name = track_filename[:-len(ext)]
+                break
+
+        if not valid_ext:
+            return None
+
+        # remove track number prefix
+        if ' - ' in song_name:
+            song_name = song_name.split(' - ', 1)[1]
+
+        parts = song_name.split('.', 1)
+        if len(parts) == 2 and parts[0].strip().isdigit():
+            song_name = parts[1]
+
+        song_name = song_name.strip()
+
+        # fix explicit label
+        if '(Exp' in album:
+            album = album.split(' (Exp')[0] + ' (Explicit)'
+        if '(Exp' in song_name:
+            song_name = song_name.split(' (Exp')[0] + ' (Explicit)'
+
+        return {
+            'song': song_name.strip(),
+            'artist': artist,
+            'album': album,
+            'path': extract_song_path(file_path)
+        }
+    except Exception as e:
+        print(f"Failed to extract metadata from {file_path}: {e}")
+        return None
 
 def ms_to_mmss(milliseconds: int) -> str:
     """Convert milliseconds to mm:ss format
@@ -675,16 +749,18 @@ def grab_all_metadata(db_type: str, db_path: str, album_art_dir: str,
 
         play_stats = list(plays_collection.aggregate(pipeline))
 
-        # combine metadata with play stats
+        # create play stats lookup dict
+        play_stats_dict = {}
         for stat in play_stats:
-            song = stat['_id']['song']
-            artist = stat['_id']['artist']
-            song_key = (song, artist)
+            song_key = (stat['_id']['song'], stat['_id']['artist'])
+            play_stats_dict[song_key] = {
+                'total_plays': stat['total_plays'],
+                'total_elapsed_ms': stat['total_elapsed_ms']
+            }
 
-            if song_key not in songs_metadata:
-                continue
-
-            metadata = songs_metadata[song_key]
+        # combine metadata with play stats (even songs w/0 songs)
+        for song_key, metadata in songs_metadata.items():
+            song, artist = song_key
             album_key = (metadata['album'], artist)
 
             if album_key not in albums_dict:
@@ -695,11 +771,14 @@ def grab_all_metadata(db_type: str, db_path: str, album_art_dir: str,
                     'songs': []
                 }
 
+            # get play stats if they exist, otherwise use 0
+            stats = play_stats_dict.get(song_key, {'total_plays': 0, 'total_elapsed_ms': 0})
+
             albums_dict[album_key]['songs'].append({
                 'song': song,
                 'song_length': ms_to_mmss(metadata['song_length_ms']),
-                'total_elapsed': ms_to_mmss(stat['total_elapsed_ms']),
-                'total_plays': stat['total_plays']
+                'total_elapsed': ms_to_mmss(stats['total_elapsed_ms']),
+                'total_plays': stats['total_plays']
             })
 
     else:
@@ -763,7 +842,7 @@ def grab_all_metadata(db_type: str, db_path: str, album_art_dir: str,
                 song,
                 artist,
                 COUNT(*) as total_plays,
-                SUM(elapsed_ms) as total_elapsed_ms
+                COALESCE(SUM(elapsed_ms), 0) as total_elapsed_ms
             FROM plays
             {date_filter}
             GROUP BY song, artist
@@ -771,16 +850,17 @@ def grab_all_metadata(db_type: str, db_path: str, album_art_dir: str,
 
         cursor.execute(query, params)
 
-        # iter through songs
+        play_stats_dict = {}
         for row in cursor.fetchall():
-            song = row[0]
-            artist = row[1]
-            song_key = (song, artist)
+            song_key = (row[0], row[1])
+            play_stats_dict[song_key] = {
+                'total_plays': row[2],
+                'total_elapsed_ms': row[3]
+            }
 
-            if song_key not in songs_metadata:
-                continue
-
-            metadata = songs_metadata[song_key]
+        # iter through songs
+        for song_key, metadata in songs_metadata.items():
+            song, artist = song_key
             album_key = (metadata['album'], artist)
 
             if album_key not in albums_dict:
@@ -792,12 +872,14 @@ def grab_all_metadata(db_type: str, db_path: str, album_art_dir: str,
                     'songs': []
                 }
 
+            stats = play_stats_dict.get(song_key, {'total_plays': 0, 'total_elapsed_ms': 0})
+
             # add metadata to songs
             albums_dict[album_key]['songs'].append({
                 'song': song,
                 'song_length': metadata['song_length_ms'],
-                'total_elapsed': row[3],
-                'total_plays': row[2]
+                'total_elapsed': stats['total_elapsed_ms'],
+                'total_plays': stats['total_plays']
             })
 
         conn.close()
@@ -808,7 +890,7 @@ def grab_all_metadata(db_type: str, db_path: str, album_art_dir: str,
     # match metadata with album art
     results = []
     for album_key, album_data in albums_dict.items():
-        # find album art (returns missing_album_cover.jpg if not found)
+        # find album art
         album_name = album_data['album_name']
         album_artist = album_data['artist']
         art_path = find_album_art(album_name, album_art_dir)
@@ -1396,7 +1478,7 @@ def load_stats_from_db(db_type: str, db_path: str,
         all_songs = list(song_collection.find({}, projection={'_id': 0}))
         songs_metadata = {(s['song'], s['artist']): s for s in all_songs}
 
-        # combine stats with metadata
+        # combine stats with metadata (even songs w/0 plays)
         all_docs = []
         for stat in play_stats:
             song_key = (stat['_id']['song'], stat['_id']['artist'])
