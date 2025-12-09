@@ -38,6 +38,8 @@ echo "Starting sync with iPod..."
 rsync -avh --progress \
     --include="*.flac" \
     --include="*.mp3" \
+    --include="*.jpg" \
+    --include="*.pdf" \
     --include="*/" \
     --exclude="*" \
     $1 $2
