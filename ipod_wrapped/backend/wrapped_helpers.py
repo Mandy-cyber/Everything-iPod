@@ -10,13 +10,30 @@ from typing import Optional, List
 from pymongo import MongoClient
 from datetime import datetime
 from collections import defaultdict
+from dotenv import load_dotenv
 
 from .album_art_fixer import process_images, organize_music_files, clear_temp_directory
 from .constants import DEFAULT_DB_PATH, DEFAULT_ALBUM_ART_DIR
 
+load_dotenv()
+
 # TODO:
 # - abstract some more :sob:
 # - round up total_elapsed_ms sum
+
+def extract_song_path(full_path: str) -> str:
+    """Extract the path starting from /Music directory
+
+    Args:
+        full_path (str): The full file path from the log
+
+    Returns:
+        str: Path starting from /Music/. Empty string otherwise.
+    """
+    if "/Music/" in full_path:
+        return "/Music/" + full_path.split("/Music/", 1)[1]
+    return ""
+
 
 def ms_to_mmss(milliseconds: int) -> str:
     """Convert milliseconds to mm:ss format
@@ -1161,7 +1178,7 @@ def grab_all_songs(db_type: str, db_path: str, album_art_dir: str,
         plays_collection = db.plays
 
         # build song filter query
-        song_filter = {'song': {'$ne': None}, 'artist': {'$ne': None}, 'song_length_ms': {'$ne': None}}
+        song_filter = {'song': {'$ne': None}, 'artist': {'$ne': None}}
         if 'album' in filters and filters['album']:
             song_filter['album'] = filters['album']
         if 'artist' in filters and filters['artist']:
@@ -1241,7 +1258,7 @@ def grab_all_songs(db_type: str, db_path: str, album_art_dir: str,
         cursor = conn.cursor()
 
         # build SQL filter query
-        conditions = ['song IS NOT NULL', 'artist IS NOT NULL', 'song_length_ms IS NOT NULL']
+        conditions = ['song IS NOT NULL', 'artist IS NOT NULL']
         params = []
         if 'album' in filters and filters['album']:
             conditions.append('album = ?')
@@ -1421,11 +1438,10 @@ def load_stats_from_db(db_type: str, db_path: str,
                 s.genres,
                 COUNT(p.id) as total_plays,
                 s.song_length_ms,
-                SUM(p.elapsed_ms) as total_elapsed_ms
+                COALESCE(SUM(p.elapsed_ms), 0) as total_elapsed_ms
             FROM songs s
             LEFT JOIN plays p ON s.song = p.song AND s.artist = p.artist{date_filter}
             GROUP BY s.song, s.artist
-            HAVING total_plays > 0
         '''
         cursor.execute(query, params)
         rows = cursor.fetchall()
