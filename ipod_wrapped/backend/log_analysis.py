@@ -16,7 +16,7 @@ from .constants import *
 from .constants import DEFAULT_DB_PATH
 from .creds_manager import get_credentials
 from .wrapped_helpers import (
-    find_ipod, fix_filenames_in_db,
+    find_ipod, fix_filenames_in_db, extract_song_path,
     find_top_genres, find_top_artists, find_top_albums, find_top_songs
 )
 from .schema import (
@@ -324,12 +324,16 @@ class LogAnalyser:
                     # add song to database if not already seen
                     song_key = f"{song}:{artist}"
                     if song_key not in self.seen_songs:
+                        # extract path
+                        song_path = extract_song_path(str(match.group(4)))
+
                         self.batch_add_to_db({
                             "song": song,
                             "album": album,
                             "artist": artist,
                             "genres": genres,
-                            "song_length_ms": length_ms
+                            "song_length_ms": length_ms,
+                            "path": song_path
                         })
                         self.seen_songs.add(song_key)
 
@@ -373,10 +377,10 @@ class LogAnalyser:
                     # sqlite batch insert
                     now = datetime.now().isoformat()
                     self.cursor.executemany('''
-                        INSERT OR IGNORE INTO songs (song, artist, album, genres, song_length_ms, last_updated)
-                        VALUES (?, ?, ?, ?, ?, ?)
+                        INSERT OR IGNORE INTO songs (song, artist, album, genres, song_length_ms, path, last_updated)
+                        VALUES (?, ?, ?, ?, ?, ?, ?)
                     ''', [(e['song'], e['artist'], e['album'], e.get('genres', ''),
-                           e.get('song_length_ms'), now)
+                           e.get('song_length_ms'), e.get('path', ''), now)
                           for e in self.batch_entries])
                     self.conn.commit()
                     print(f"Inserted {self.cursor.rowcount} songs to SQLite")

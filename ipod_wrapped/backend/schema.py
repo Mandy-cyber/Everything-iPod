@@ -8,6 +8,7 @@ SQLITE_SONGS_TABLE = '''
         album TEXT NOT NULL,
         genres TEXT,
         song_length_ms INTEGER,
+        path TEXT,
         last_updated TEXT,
         PRIMARY KEY (song, artist)
     )
