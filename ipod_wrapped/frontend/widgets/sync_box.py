@@ -4,6 +4,7 @@ gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
 from gi.repository import Gtk, Adw, GLib
 from backend import LogAnalyser
+from backend.creds_manager import has_credentials
 from .banner import show_banner, hide_banner
 import threading
 
@@ -30,7 +31,18 @@ def create_sync_box_widgets(error_banner: Optional[Adw.Banner], success_banner: 
     explainer.set_wrap(True)
     explainer.set_max_width_chars(50)
     explainer.add_css_class('start-wrapped-explainer')
-    
+
+    # credential status
+    cred_status = Gtk.Label()
+    cred_status.set_wrap(True)
+    cred_status.set_max_width_chars(80)
+
+    if has_credentials():
+        cred_status.set_visible(False)
+    else:
+        cred_status.set_markup("<span foreground='#e5a50a' weight='bold'>Last.fm credentials required: Open Settings to setup</span>")
+        cred_status.add_css_class('start-wrapped-warning')
+
     # spinner
     spinner = Gtk.Spinner()
     spinner.set_halign(Gtk.Align.CENTER)
@@ -43,16 +55,17 @@ def create_sync_box_widgets(error_banner: Optional[Adw.Banner], success_banner: 
     label = Gtk.Label(label="Start Wrapped")
     box.append(icon)
     box.append(label)
-    
+
     # start button button
     start_btn = Gtk.Button(child=box)
     start_btn.add_css_class('start-wrapped-btn')
     start_btn.set_halign(Gtk.Align.CENTER)
     start_btn.set_valign(Gtk.Align.START)
+    start_btn.set_sensitive(has_credentials())
     start_btn.connect("clicked", lambda btn: start_wrapped(start_btn, spinner, error_banner, success_banner, refresh_callback))
 
     widgets = [
-        title, subtitle, explainer, spinner, start_btn
+        cred_status, title, subtitle, explainer, spinner, start_btn
     ]
     return widgets
 
@@ -67,6 +80,12 @@ def start_wrapped(button: Gtk.Button, spinner: Gtk.Spinner,
         success_banner (Adw.Banner): Banner for success messages
         refresh_callback: Function to call to refresh all pages after sync
     """
+    # check for credentials
+    if not has_credentials():
+        if error_banner:
+            show_banner(error_banner, "Please setup Last.fm credentials in Settings first")
+        return
+
     # hide any prev. banners
     if error_banner:
         hide_banner(error_banner)
@@ -80,9 +99,16 @@ def start_wrapped(button: Gtk.Button, spinner: Gtk.Spinner,
 
     def run_analysis():
         """Run the analysis in a background thread"""
-        analyser = LogAnalyser("local")
-        result = analyser.run()
-        
+        try:
+            analyser = LogAnalyser("local")
+            result = analyser.run()
+        except ValueError as e:
+            # creds error
+            result = {"error": str(e)}
+        except Exception as e:
+            # other errors
+            result = {"error": f"Analysis failed: {str(e)}"}
+
         # update UI on main thread
         GLib.idle_add(analysis_complete, result, button, spinner,
                      error_banner, success_banner, refresh_callback)

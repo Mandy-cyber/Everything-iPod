@@ -222,42 +222,79 @@ headerbar viewswitcher label {
     background-color: #923a78;
 }
 
-/* START WRAPPED */
-.start-wrapped-box {
+/* START WRAPPED & SETTINGS */
+.start-wrapped-box,
+.settings-box {
     padding: 5px;
 }
 
-.start-wrapped-title {
+.start-wrapped-title,
+.settings-title {
     font-weight: 500;
     font-size: 18px;
     margin-top: 20px;
     margin-bottom: 5px;
 }
 
-.start-wrapped-subtitle {
+.settings-title {
+    margin-bottom: 0px;
+}
+
+.start-wrapped-subtitle,
+.settings-subtitle {
     font-weight: 300;
     font-size: 14px;
 }
 
-.start-wrapped-explainer {
+.start-wrapped-explainer,
+.settings-explainer {
     font-weight: 200;
     font-size: 11px; 
     margin: 10px 100px 0px 100px;
+}
+
+.settings-explainer {
+    margin: 0px 50px 0px 50px;
 }
 
 .start-wrapped-spinner {
     margin-top: 15px;
 }
 
-.start-wrapped-btn {
+.start-wrapped-btn,
+.settings-save-btn {
     margin-top: 15px;
     margin-bottom: 15px;
+}
+
+.start-wrapped-warning {
+    padding: 10px;
+    border-radius: 6px;
+    background-color: rgba(229, 165, 10, 0.15);
+}
+
+.settings-status {
+    font-size: 14px;
+    font-weight: bold;
+    padding: 8px 12px;
+    border-radius: 6px;
+}
+
+.settings-status.success {
+    color: #26a269;
+    background-color: rgba(38, 162, 105, 0.15);
+}
+
+.settings-status.warning {
+    color: #e5a50a;
+    background-color: rgba(229, 165, 10, 0.15);
 }
 
 /* NAV MENU */
 .nav-menu-icon,
 .nav-about-icon,
-.nav-start-icon {
+.nav-start-icon,
+.nav-settings-icon {
     background-color: #2a2a2e;
     min-width: 33px;
     min-height: 33px;
@@ -265,7 +302,8 @@ headerbar viewswitcher label {
 
 .nav-menu-icon:hover,
 .nav-about-icon:hover,
-.nav-start-icon:hover {
+.nav-start-icon:hover,
+.nav-settings-icon:hover {
     background-color: #923a78;
 }
 

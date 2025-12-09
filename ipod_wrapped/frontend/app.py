@@ -74,10 +74,13 @@ class MainWindow(Adw.ApplicationWindow):
         self.error_banner = create_banner("", "error")
         self.success_banner = create_banner("", "success")
 
-        # create menu nav button
-        self.menu_btn = create_menu_nav(self.overlay, self, self.error_banner,
-                                        self.success_banner, self.refresh_all_pages)
+        # create menu nav button + 'Start Wrapped' dialog
+        self.menu_btn, self.open_start_wrapped_dialog = create_menu_nav(
+            self.overlay, self, self.error_banner,
+            self.success_banner, self.refresh_all_pages
+        )
         self.overlay.add_overlay(self.menu_btn)
+        self.genres_page.set_start_wrapped_callback(self.open_start_wrapped_dialog)
 
         # add overlay to main box
         main_box.append(self.overlay)
