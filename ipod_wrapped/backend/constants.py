@@ -4,8 +4,8 @@ import os
 # misc.
 BATCH_SIZE = 50
 SERVICE_NAME = 'ipod-wrapped'
-ipod_log_pattern = r'^(\d+):(\d+):(\d+):(.+)$'
-song_extensions = ['.mp3', '.flac', '.ogg', '.wav', '.m4a']
+IPOD_LOG_PATTERN = r'^(\d+):(\d+):(\d+):(.+)$'
+SONG_EXTENSIONS = ['.mp3', '.flac', '.ogg', '.wav', '.m4a']
 
 # storage paths
 STORAGE_DIR = 'storage'
@@ -18,9 +18,9 @@ user_auth_root = 'http://www.last.fm/api/auth'
 
 # enums
 class Repeat(Enum):
-    NONE: str = "none"
-    ONE: str = "one"
-    ALL: str = "all"
+    NONE = "none"
+    ONE = "one"
+    ALL = "all"
 
 # normalization for merging duplicate genres
 genre_mappings = {

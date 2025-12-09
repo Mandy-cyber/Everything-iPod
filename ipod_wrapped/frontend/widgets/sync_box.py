@@ -27,7 +27,7 @@ def create_sync_box_widgets(error_banner: Optional[Adw.Banner], success_banner: 
     subtitle = Gtk.Label(label="Sync your Listening History")
     subtitle.add_css_class('start-wrapped-subtitle')
 
-    explainer = Gtk.Label(label="Make sure your iPod is plugged in and accessible in your filesystem. Once confirmed, click below to pull your listening log and album covers. Only songs and albums you've listened to will populate here automatically. With this we will generate/update your iPod Wrapped!\n\nThe first run will take a while, but subsequent updates will be much faster. Have fun!")
+    explainer = Gtk.Label(label="Make sure your iPod is plugged in and accessible in your filesystem. Once confirmed, click below to pull your listening log and album covers. All songs and albums on your iPod will populate here automatically. With this we will generate/update your iPod Wrapped!\n\nThe first run will take a while, but subsequent updates will be much faster. Have fun!")
     explainer.set_wrap(True)
     explainer.set_max_width_chars(50)
     explainer.add_css_class('start-wrapped-explainer')

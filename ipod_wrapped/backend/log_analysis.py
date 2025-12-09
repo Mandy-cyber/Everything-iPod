@@ -2,6 +2,7 @@ import os
 import re
 import glob
 import json
+import shutil
 import sqlite3
 import polars as pl
 from dotenv import load_dotenv
@@ -15,8 +16,9 @@ from .constants import *
 from .constants import DEFAULT_DB_PATH
 from .creds_manager import get_credentials
 from .wrapped_helpers import (
-    find_ipod, fix_filenames_in_db,
-    find_top_genres, find_top_artists, find_top_albums, find_top_songs
+    find_ipod, fix_filenames_in_db, extract_song_path,
+    find_top_genres, find_top_artists, find_top_albums, find_top_songs,
+    list_dir_song_paths, extract_metadata_from_path, find_music_directory
 )
 from .schema import (
     SQLITE_SONGS_TABLE, SQLITE_PLAYS_TABLE,
@@ -159,7 +161,7 @@ class LogAnalyser:
         Returns:
             bool: True if valid, False otherwise
         """
-        return any(filename.endswith(ext) for ext in song_extensions)
+        return any(filename.endswith(ext) for ext in SONG_EXTENSIONS)
 
 
     def is_corrupted_metadata(self, text: str) -> bool:
@@ -278,7 +280,7 @@ class LogAnalyser:
         """
         # remove file extension first
         song_wout_ext = song
-        for ext in song_extensions:
+        for ext in SONG_EXTENSIONS:
             if song.endswith(ext):
                 song_wout_ext = song[:-len(ext)]
                 break
@@ -302,7 +304,7 @@ class LogAnalyser:
         failed = []
 
         for log_entry in self.log_data:
-            match = re.match(ipod_log_pattern, log_entry.strip())
+            match = re.match(IPOD_LOG_PATTERN, log_entry.strip())
             if match:
                 try:
                     album, artist, song = self.parse_track_info(str(match.group(4)))
@@ -323,12 +325,16 @@ class LogAnalyser:
                     # add song to database if not already seen
                     song_key = f"{song}:{artist}"
                     if song_key not in self.seen_songs:
+                        # extract path
+                        song_path = extract_song_path(str(match.group(4)))
+
                         self.batch_add_to_db({
                             "song": song,
                             "album": album,
                             "artist": artist,
                             "genres": genres,
-                            "song_length_ms": length_ms
+                            "song_length_ms": length_ms,
+                            "path": song_path
                         })
                         self.seen_songs.add(song_key)
 
@@ -372,10 +378,10 @@ class LogAnalyser:
                     # sqlite batch insert
                     now = datetime.now().isoformat()
                     self.cursor.executemany('''
-                        INSERT OR IGNORE INTO songs (song, artist, album, genres, song_length_ms, last_updated)
-                        VALUES (?, ?, ?, ?, ?, ?)
+                        INSERT OR IGNORE INTO songs (song, artist, album, genres, song_length_ms, path, last_updated)
+                        VALUES (?, ?, ?, ?, ?, ?, ?)
                     ''', [(e['song'], e['artist'], e['album'], e.get('genres', ''),
-                           e.get('song_length_ms'), now)
+                           e.get('song_length_ms'), e.get('path', ''), now)
                           for e in self.batch_entries])
                     self.conn.commit()
                     print(f"Inserted {self.cursor.rowcount} songs to SQLite")
@@ -383,6 +389,9 @@ class LogAnalyser:
                 self.batch_entries.clear()
             except Exception as e:
                 print(f"Failed to batch add song metadata: {e}")
+                return False
+            
+        return True
 
 
     def add_plays_from_dataframe(self, df: pl.DataFrame):
@@ -709,9 +718,54 @@ class LogAnalyser:
             "most_listened_song": self.find_most_listened_to(),
             "total_play_time_mins": self.calc_total_play_time()
         }
-        
-        print(json.dumps(stats, indent=4))
         return stats
+
+
+    def process_filesystem_songs(self, music_dir: str):
+        """Process all songs from filesystem and add to database
+
+        Args:
+            music_dir (str): path to the Music directory on iPod
+        """
+        print("Processing all songs from filesystem...")
+        all_song_paths = list_dir_song_paths(music_dir)
+        added_count = 0
+
+        for song_path in all_song_paths:
+            # grab metadata
+            metadata = extract_metadata_from_path(song_path)
+            if not metadata:
+                continue
+
+            song_key = f"{metadata['song']}:{metadata['artist']}"
+
+            # skip if already seen in logs
+            if song_key in self.seen_songs:
+                continue
+
+            # find genre info based on album
+            album_key = f"{metadata['album']}:{metadata['artist']}"
+            if album_key in self.genre_data:
+                genres = self.genre_data[album_key]
+            else:
+                genres = self.find_album_genres((metadata['artist'], metadata['album']))
+                self.genre_data[album_key] = genres
+
+            # add to db
+            self.batch_add_to_db({
+                "song": metadata['song'],
+                "album": metadata['album'],
+                "artist": metadata['artist'],
+                "genres": genres,
+                "song_length_ms": None,  # no length info from filesystem
+                "path": metadata['path']
+            })
+            self.seen_songs.add(song_key)
+            added_count += 1
+
+        # add remaining batch
+        self.batch_add_to_db({}, final_add=True)
+        print(f"Added {added_count} songs from filesystem that weren't in playback.log")
 
 
     def close(self):
@@ -728,27 +782,37 @@ class LogAnalyser:
         if not log_location:
             print("Could not find the iPod. Make sure it is connected via USB")
             return {"error": "Could not find iPod. Make sure it is connected & mounted."}
-
+        
+        
         try:
+            # copy log to local storage
+            shutil.copy2(log_location, STORAGE_DIR)
+
             # read and analyse logs
             self.log_data = self.load_logs(log_location)
             self.log_df = self.logs_to_df()
             print(f"Loaded {len(self.log_df)} log entries")
 
-            # finish updating db
+            # finish updating db with logged songs
             self.batch_add_to_db({}, final_add=True)
             self.add_plays_from_dataframe(self.log_df)
+
+            # add songs from ipod fs not in logs
+            music_dir = find_music_directory()
+            if music_dir:
+                self.process_filesystem_songs(music_dir)
+            else:
+                print("Could not find Music directory, skipping unplayed songs")
 
             # fix truncated album names
             print("Fixing truncated album names in database...")
             fix_filenames_in_db(db_type=self.db_type, db_path=self.db_path)
-            
+
             # consolidate genre names
             self.merge_duplicate_genres()
             
             # run stats
             self.stats = self.calc_all_stats()
-            print(json.dumps(self.stats, indent=4))
         except Exception as e:
             print(f"ERROR: {e}")
             return {"error": "Something went wrong. Please try again later"}
