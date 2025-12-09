@@ -2,6 +2,7 @@ import os
 import re
 import glob
 import json
+import shutil
 import sqlite3
 import polars as pl
 from dotenv import load_dotenv
@@ -728,8 +729,12 @@ class LogAnalyser:
         if not log_location:
             print("Could not find the iPod. Make sure it is connected via USB")
             return {"error": "Could not find iPod. Make sure it is connected & mounted."}
-
+        
+        
         try:
+            # copy log to local storage
+            shutil.copy2(log_location, STORAGE_DIR)
+
             # read and analyse logs
             self.log_data = self.load_logs(log_location)
             self.log_df = self.logs_to_df()
@@ -748,7 +753,6 @@ class LogAnalyser:
             
             # run stats
             self.stats = self.calc_all_stats()
-            print(json.dumps(self.stats, indent=4))
         except Exception as e:
             print(f"ERROR: {e}")
             return {"error": "Something went wrong. Please try again later"}

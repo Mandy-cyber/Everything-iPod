@@ -17,8 +17,6 @@ from .constants import DEFAULT_DB_PATH, DEFAULT_ALBUM_ART_DIR
 # TODO:
 # - abstract some more :sob:
 # - round up total_elapsed_ms sum
-# - store a local copy of playback.log in storage/ when sync is started
-
 
 def ms_to_mmss(milliseconds: int) -> str:
     """Convert milliseconds to mm:ss format
