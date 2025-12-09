@@ -4,7 +4,7 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-THEME_DIR="${THEME_DIR:-$PROJECT_ROOT/rockbox_themes/the_letter/.rockbox}"
+THEME_DIR="${THEME_DIR:-$PROJECT_ROOT/rockbox_themes/<theme-name>/.rockbox}"
 ROCKBOX_DIR="${ROCKBOX_DIR:-$HOME/Coding/rockbox/build-dir/simdisk/.rockbox}"
 
 # kill current rockboxui instance(s)
