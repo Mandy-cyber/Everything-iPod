@@ -15,7 +15,6 @@
 
 # Preload Screen Images
 %xl(U,usb_screen.bmp)
-%xl(L,lock_screen.bmp)
 
 # Font Definitions
 %Fl(2,16-Adobe-Helvetica-AF.fnt)
@@ -52,23 +51,12 @@
 %Vf(6D4C3DFF)
 
 #-----------------------------------------
-# LOCK SCREEN
-#-----------------------------------------
-%?mh<%Vd(lockscreen)|>
-
-# Clear Screen & Display BG
-%Vl(lockscreen,0,0,320,240,-)
-%xd(L)
-
-#-----------------------------------------
 # USB SCREEN
 #-----------------------------------------
-%?if(%cs, =, 21)<%Vd(usbScreen)|>
+%?if(%cs, =, 21)<%Vd(usb)|>
 
-# Clear Screen
-%Vl(usbScreen,0,0,320,240,-)
-
-# Load BG Image
+# Clear Screen & Display BG
+%Vl(usb,0,0,320,240,-)
 %xd(U)
 
 #-----------------------------------------
