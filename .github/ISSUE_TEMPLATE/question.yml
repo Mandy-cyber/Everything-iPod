@@ -1,0 +1,39 @@
+name: Question
+description: Ask a question about iPod Wrapped
+title: "[Question]: "
+labels: ["question"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Hey! Got a question? No worries, ask away! I can't say I'm the quickest with responses, but I will *definitely* respond.
+
+  - type: textarea
+    id: question
+    attributes:
+      label: Your Question
+      description: What would you like to know?
+      placeholder: How do I...? Why does...? Can the app...?
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional Context
+      description: Any additional information that might be helpful
+      placeholder: |
+        I'm trying to...
+        I've already tried...
+        Here's what I'm seeing...
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      description: Before submitting, please confirm
+      options:
+        - label: I have checked the README and CONTRIBUTING.md
+          required: true
+        - label: I have searched existing issues to see if this has been asked before
+          required: true
