@@ -1,5 +1,5 @@
 # Everything-iPod
-> I'm just a sleepy girl, there's a lot of rough edges and things to adjust/fix/add/remove in the repo. Tek time with me, soon come!
+> I'm just a sleepy girl, there's a lot of rough edges and things to adjust/fix/add/remove in the repo. Soon come!
 
 <!-- START OF MDTOC -->
 ### Table of Contents
@@ -13,6 +13,7 @@
     - [`reload_theme.sh`](#reload_themesh)
     - [`update_album_genres.py`](#update_album_genrespy)
 - [FAQs](#faqs)
+- [Support](#support)
 - [TODO](#todo)
     - [ipod_wrapped](#ipod_wrapped)
     - [rockbox_theme](#rockbox_theme)
@@ -107,6 +108,14 @@ python update_album_genres.py
 
 # FAQs
 Ask me stuff so I have stuff to put here <3
+
+<br>
+
+# Support
+If you want to support, you can help via:
+- Writing some code!! Check out the [CONTRIBUTING.md](https://github.com/Mandy-cyber/Everything-iPod/blob/main/CONTRIBUTING.md) guide
+- Buying me some music from my [wishlist](https://bandcamp.com/mandilocs/wishlist), or your favorite album <3
+  - `FLAC` preferred
 
 <br>
 
