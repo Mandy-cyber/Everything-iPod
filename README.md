@@ -116,6 +116,7 @@ Ask me stuff so I have stuff to put here <3
 - [x] Proper 'Getting Started' page
 - [x] Pass in Last.fm keys in UI
 - [ ] Add/Adjust logging
+- [ ] Support multiple formats of Music dir/song names
 - [ ] Add functionality to update album genres in the UI (currently only via utility script)
 - [ ] Add proper rate limiting logic for log analysis
 - [ ] Disable light mode LOL
@@ -130,6 +131,7 @@ Ask me stuff so I have stuff to put here <3
 
 ### rockbox_theme
 - [x] Fix and uncomment "the letter" lockscreen
+- [ ] Minecraft theme
 - [ ] Add a quickscreen to "the letter"
 - [ ] Create a vinyl theme
 
