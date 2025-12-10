@@ -116,7 +116,7 @@ Ask me stuff so I have stuff to put here <3
 - [x] Proper 'Getting Started' page
 - [x] Pass in Last.fm keys in UI
 - [ ] Add/Adjust logging
-- [ ] Support multiple formats of Music dir/song names
+- [x] Support multiple formats of Music dir/song names
 - [ ] Add functionality to update album genres in the UI (currently only via utility script)
 - [ ] Add proper rate limiting logic for log analysis
 - [ ] Disable light mode LOL
