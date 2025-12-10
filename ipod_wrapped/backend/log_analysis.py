@@ -186,8 +186,19 @@ class LogAnalyser:
             str: the extracted song title
         """
         if ' - ' in track_filename:
-            song = self.clean_song(track_filename.split(' - ', 1)[1])
+            # (e.g., "Artist - Song" or "Artist - Album - 01 Song")
+            parts = track_filename.split(' - ')
+            if len(parts) >= 3:
+                # assume "Artist - Album - Song" format
+                song = self.clean_song(' - '.join(parts[2:]))
+            else:
+                song = self.clean_song(parts[1])
+        elif '-' in track_filename:
+            song = self.clean_song(track_filename.split('-', 1)[1])
+        elif '_' in track_filename:
+            song = self.clean_song(track_filename.split('_', 1)[1])
         else:
+            # no separator, use whole filename
             song = self.clean_song(track_filename)
         return song
 
