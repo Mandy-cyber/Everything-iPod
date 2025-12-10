@@ -83,10 +83,20 @@ def extract_metadata_from_path(file_path: str) -> Optional[dict]:
         if not valid_ext:
             return None
 
-        # remove track number prefix
+        # handle separator patterns (e.g., "Artist - Song" or "Artist - Album - 01 Song")
         if ' - ' in song_name:
-            song_name = song_name.split(' - ', 1)[1]
+            parts = song_name.split(' - ')
+            # if 3+ parts, assume "Artist - Album - Song" format
+            if len(parts) >= 3:
+                song_name = ' - '.join(parts[2:])
+            else:
+                song_name = parts[1]
+        elif '-' in song_name:
+            song_name = song_name.split('-', 1)[1]
+        elif '_' in song_name:
+            song_name = song_name.split('_', 1)[1]
 
+        # remove track number prefix (e.g., "01. Song")
         parts = song_name.split('.', 1)
         if len(parts) == 2 and parts[0].strip().isdigit():
             song_name = parts[1]
