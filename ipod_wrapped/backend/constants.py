@@ -5,7 +5,7 @@ import os
 BATCH_SIZE = 50
 SERVICE_NAME = 'ipod-wrapped'
 IPOD_LOG_PATTERN = r'^(\d+):(\d+):(\d+):(.+)$'
-SONG_EXTENSIONS = ['.mp3', '.flac', '.ogg', '.wav', '.m4a']
+SONG_EXTENSIONS = ['.mp3', '.flac', '.ogg', '.wav', '.m4a', '.aac', '.alac', '.aiff']
 
 # storage paths
 STORAGE_DIR = 'storage'
