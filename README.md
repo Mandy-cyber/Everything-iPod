@@ -39,11 +39,19 @@ This is my silly little attempt to recreate Spotify Wrapped for iPod music liste
 
 Now, you're ready to run the iPod Wrapped app! Listen to some music first with logging enabled so you actually get some results in the app though haha!
 
-1. In `ipod_wrapped/` run `python main.py`
+```bash
+# 1. clone
+git clone https://github.com/Mandy-cyber/Everything-iPod/
+cd ipod_wrapped
 
-2. Follow the popup instructions
+# 2. install dependencies
+pip install -r requirements.txt
 
-3. "Start Wrapped" and have fun!!
+# 3. run
+python main.py
+
+# 4. Follow the popup instructions
+```
 
 <br>
 
