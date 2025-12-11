@@ -1,7 +1,7 @@
 polars
 python-dotenv
 requests
-pygobject
+PyGObject
 pymongo
 Pillow
 mutagen
