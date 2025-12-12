@@ -141,23 +141,23 @@ def ms_to_mmss(milliseconds: int) -> str:
 
 
 def find_rockbox_device() -> Optional[str]:
-    """Find any mounted device containing a .rockbox folder"""
-    
-    # Get all mounted partitions
+    """Find the mounted device with a .rockbox folder in it"""
     for partition in psutil.disk_partitions(all=False):
-        # Skip system partitions on Windows
+        # skip sys partitions on Windows
         if partition.device.startswith('C:\\') and platform.system() == "Windows":
             continue
-            
+
+        # found mount point
         mount_point = partition.mountpoint
         rockbox_path = Path(mount_point) / '.rockbox'
         
         try:
+            # check if rockbox folder present
             if rockbox_path.exists() and rockbox_path.is_dir():
                 print(f"Found Rockbox device at: {mount_point}")
                 return mount_point
         except (PermissionError, OSError):
-            # Skip inaccessible mounts
+            # mount can't be accessed
             continue
     
     print("No Rockbox device found")
