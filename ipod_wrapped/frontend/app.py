@@ -1,4 +1,7 @@
 import sys
+import os
+import pathlib
+import shutil
 import gi
 gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
@@ -8,16 +11,32 @@ from .pages import AlbumsPage, SongsPage, WrappedPage, GenresPage
 from .widgets.bottom_bar import create_bottom_bar
 from .widgets.banner import create_banner
 from .widgets.menu_nav import create_menu_nav
-from backend.constants import DEFAULT_DB_PATH, DEFAULT_ALBUM_ART_DIR
+from backend.constants import DEFAULT_DB_PATH, DEFAULT_ALBUM_ART_DIR, STORAGE_DIR
 
 class MainWindow(Adw.ApplicationWindow):
     """Main application window with navigation"""
     def __init__(self, app, db_type="local", db_path=DEFAULT_DB_PATH, album_art_dir=DEFAULT_ALBUM_ART_DIR):
         super().__init__(application=app)
-        
+
+        # check storage dir exists
+        STORAGE_DIR.mkdir(parents=True, exist_ok=True)
+        DEFAULT_ALBUM_ART_DIR.mkdir(parents=True, exist_ok=True)
+
+        # include missing_album_cover.jpg in storage
+        missing_cover_dest = DEFAULT_ALBUM_ART_DIR / "missing_album_cover.jpg"
+        if not missing_cover_dest.exists():
+            missing_cover_src = pathlib.Path(__file__).parent.parent / "storage" / "album_art" / "missing_album_cover.jpg"
+            if missing_cover_src.exists():
+                shutil.copy2(missing_cover_src, missing_cover_dest)
+
         # setup css
         css_provider = Gtk.CssProvider()
-        css_provider.load_from_path("gtk_style.css")
+        # find css file location
+        css_path = pathlib.Path(__file__).parent.parent / "gtk_style.css"
+        if css_path.exists():
+            css_provider.load_from_path(str(css_path))
+        else:
+            print(f"warning: css file not found at {css_path}")
         display = Gdk.Display.get_default()
         if display is not None:
             Gtk.StyleContext.add_provider_for_display(

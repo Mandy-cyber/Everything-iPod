@@ -4,8 +4,7 @@ import glob
 import json
 import shutil
 import sqlite3
-import polars as pl
-from dotenv import load_dotenv
+import pandas as pd
 import requests
 from time import sleep
 from pymongo import MongoClient, UpdateOne
@@ -26,7 +25,12 @@ from .schema import (
     MONGO_SONGS_COLLECTION, MONGO_PLAYS_COLLECTION, MONGO_PLAYS_INDEXES
 )
 
-load_dotenv()
+# load .env (optional for development)
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
 
 # TODO:
 # - display albums missing genre info
@@ -304,12 +308,12 @@ class LogAnalyser:
         return self.fix_explicit_label(song_wout_ext.strip())
 
 
-    def logs_to_df(self) -> pl.DataFrame:
+    def logs_to_df(self) -> pd.DataFrame:
         """Creates a dataframe of all info found in the iPod
         log file
 
         Returns:
-            pl.DataFrame: A dataframe of the iPod log data
+            pd.DataFrame: A dataframe of the iPod log data
         """
         entries = []
         failed = []
@@ -364,7 +368,7 @@ class LogAnalyser:
                     failed.append(log_entry)
                     print(log_entry, e)
 
-        df = pl.DataFrame(entries)
+        df = pd.DataFrame(entries)
         if len(failed) > 0:
             print(f"Failed to parse {len(failed)} entries")
 
@@ -405,14 +409,14 @@ class LogAnalyser:
         return True
 
 
-    def add_plays_from_dataframe(self, df: pl.DataFrame):
+    def add_plays_from_dataframe(self, df: pd.DataFrame):
         """Insert individual play events from the log dataframe into plays table/collection
 
         Args:
-            df (pl.DataFrame): Dataframe containing parsed log entries with columns:
+            df (pd.DataFrame): Dataframe containing parsed log entries with columns:
                               timestamp, elapsed_ms, song, artist
         """
-        if df.is_empty():
+        if df.empty:
             print("No plays to insert")
             return
 
@@ -421,14 +425,15 @@ class LogAnalyser:
         try:
             if self.db_type == 'mongo':
                 # convert dataframe to list of dicts
-                plays_data = []
-                for row in df.iter_rows(named=True):
-                    plays_data.append({
-                        'song': row['song'],
-                        'artist': row['artist'],
-                        'timestamp': datetime.fromtimestamp(row['timestamp']),
-                        'elapsed_ms': row['elapsed_ms']
-                    })
+                plays_data = [
+                    {
+                        'song': song,
+                        'artist': artist,
+                        'timestamp': datetime.fromtimestamp(ts),
+                        'elapsed_ms': elapsed
+                    }
+                    for song, artist, ts, elapsed in zip(df['song'], df['artist'], df['timestamp'], df['elapsed_ms'])
+                ]
 
                 # batch insert all plays
                 if plays_data:
@@ -436,14 +441,15 @@ class LogAnalyser:
                     print(f"Inserted {len(result.inserted_ids)} plays to MongoDB")
             else:
                 # sqlite batch insert
-                plays_data = []
-                for row in df.iter_rows(named=True):
-                    plays_data.append((
-                        row['song'],
-                        row['artist'],
-                        datetime.fromtimestamp(row['timestamp']).isoformat(),
-                        row['elapsed_ms']
-                    ))
+                plays_data = [
+                    (
+                        song,
+                        artist,
+                        datetime.fromtimestamp(ts).isoformat(),
+                        elapsed
+                    )
+                    for song, artist, ts, elapsed in zip(df['song'], df['artist'], df['timestamp'], df['elapsed_ms'])
+                ]
 
                 self.cursor.executemany('''
                     INSERT OR IGNORE INTO plays (song, artist, timestamp, elapsed_ms)
@@ -503,23 +509,23 @@ class LogAnalyser:
         return genre_str
 
 
-    def df_to_file(self, df: Optional[pl.DataFrame] = None,
+    def df_to_file(self, df: Optional[pd.DataFrame] = None,
                    output_file: str = 'sample_files/ipod_log.csv') -> None:
         """Writes the given dataframe, or the log dataframe, to the given
         output file.
 
         Args:
-            df (pl.DataFrame, optional): The dataframe to write. Defaults to None.
+            df (pd.DataFrame, optional): The dataframe to write. Defaults to None.
             output_file (str, optional): Where to write the df to.
                                         Defaults to 'sample_files/ipod_log.csv'.
         """
         if df is None:
             df = self.log_df
-        df.write_csv(output_file)
+        df.to_csv(output_file, index=False)
         
         
-    def load_stats_from_db(self) -> pl.DataFrame:
-        """Loads song statistics aggregated from plays table into a polars DataFrame"""
+    def load_stats_from_db(self) -> pd.DataFrame:
+        """Loads song statistics aggregated from plays table into a pandas DataFrame"""
         if self.db_type == 'mongo':
             # aggregate from plays collection
             pipeline = [
@@ -580,9 +586,9 @@ class LogAnalyser:
             ]
 
         if not all_docs:
-            return pl.DataFrame()
+            return pd.DataFrame()
 
-        return pl.DataFrame(all_docs)
+        return pd.DataFrame(all_docs)
 
 
     def merge_duplicate_genres(self) -> None:
@@ -678,19 +684,19 @@ class LogAnalyser:
         # load stats from db
         stats_df = self.load_stats_from_db()
 
-        if stats_df.is_empty():
+        if stats_df.empty:
             return None
 
         # filter out rows without total_plays
-        stats_df = stats_df.filter(pl.col('total_plays').is_not_null())
+        stats_df = stats_df[stats_df['total_plays'].notna()]
 
         # sort by total_plays and get top song
-        top_song = stats_df.sort('total_plays', descending=True).head(1)
+        top_song = stats_df.sort_values('total_plays', ascending=False).head(1)
 
         if len(top_song) == 0:
             return None
 
-        row = top_song.row(0, named=True)
+        row = top_song.iloc[0]
         return (row['song'], row['artist'], row['album'])
 
 
@@ -700,11 +706,11 @@ class LogAnalyser:
         # load stats from db
         stats_df = self.load_stats_from_db()
 
-        if stats_df.is_empty():
+        if stats_df.empty:
             return 0
 
         # filter out rows without total_elapsed_ms
-        stats_df = stats_df.filter(pl.col('total_elapsed_ms').is_not_null())
+        stats_df = stats_df[stats_df['total_elapsed_ms'].notna()]
 
         # sum elapsed time + convert to minutes
         total_ms = stats_df['total_elapsed_ms'].sum()

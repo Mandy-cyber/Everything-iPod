@@ -669,7 +669,7 @@ def grab_all_metadata(db_type: str, db_path: str, album_art_dir: str,
     if db_type != 'mongo' and db_type != 'local':
         return []
 
-    if db_type == 'local' and (not db_path or len(db_path) == 0):
+    if db_type == 'local' and not db_path:
         return []
 
     # fix truncated album names before fetching metadata
@@ -937,7 +937,7 @@ def create_genre_mappings(db_type: str, db_path: str, album_art_dir: str,
     if db_type != 'mongo' and db_type != 'local':
         return []
 
-    if db_type == 'local' and (not db_path or len(db_path) == 0):
+    if db_type == 'local' and not db_path:
         return []
 
     # process filters
@@ -1232,7 +1232,7 @@ def grab_all_songs(db_type: str, db_path: str, album_art_dir: str,
     if db_type != 'mongo' and db_type != 'local':
         return []
 
-    if db_type == 'local' and (not db_path or len(db_path) == 0):
+    if db_type == 'local' and not db_path:
         return []
 
     # process filters

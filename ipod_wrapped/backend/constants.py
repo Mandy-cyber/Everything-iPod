@@ -1,5 +1,6 @@
-from enum import Enum
 import os
+import pathlib
+from enum import Enum
 
 # misc.
 BATCH_SIZE = 50
@@ -7,10 +8,23 @@ SERVICE_NAME = 'ipod-wrapped'
 IPOD_LOG_PATTERN = r'^(\d+):(\d+):(\d+):(.+)$'
 SONG_EXTENSIONS = ['.mp3', '.flac', '.ogg', '.wav', '.m4a', '.aac', '.alac', '.aiff', '.opus', '.wma', '.ape', '.wv', '.mpc', '.dsf', '.dsd', '.tta']
 
-# storage paths
-STORAGE_DIR = 'storage'
-DEFAULT_DB_PATH = os.path.join(STORAGE_DIR, 'ipod_wrapped.db')
-DEFAULT_ALBUM_ART_DIR = os.path.join(STORAGE_DIR, 'album_art')
+# env. stuff
+APPIMAGE = os.environ.get("APPIMAGE")
+
+if APPIMAGE:
+    # ('prod') paths
+    HOME_DIR = pathlib.Path.home() / ".iPodWrapped"
+    STORAGE_DIR = HOME_DIR / "storage"
+    FRONTEND_DIR = HOME_DIR / "frontend"
+else:
+    # (local dev) paths
+    BASE_DIR = pathlib.Path(__file__).parent.parent
+    STORAGE_DIR = BASE_DIR / "storage"
+    FRONTEND_DIR = BASE_DIR / "frontend"
+
+# storage
+DEFAULT_DB_PATH = STORAGE_DIR / "ipod_wrapped.db"
+DEFAULT_ALBUM_ART_DIR = STORAGE_DIR / "album_art"
 
 # lastfm
 lastfm_root = 'http://ws.audioscrobbler.com'
