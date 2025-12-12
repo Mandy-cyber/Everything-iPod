@@ -3,7 +3,7 @@
 from .log_analysis import LogAnalyser
 from .wrapped_helpers import (
     grab_all_metadata,
-    find_ipod,
+    find_rockbox_device,
     find_music_directory,
     fix_filenames_in_db,
     fix_and_store_album_art,
@@ -29,7 +29,7 @@ from .creds_manager import save_credentials, get_credentials, has_credentials, d
 __all__ = [
     'LogAnalyser',
     'grab_all_metadata',
-    'find_ipod',
+    'find_rockbox_device',
     'find_music_directory',
     'fix_filenames_in_db',
     'fix_and_store_album_art',

@@ -2,9 +2,11 @@ import os
 import re
 import glob
 import json
-import subprocess
+import psutil
 import shutil
 import sqlite3
+import platform
+from pathlib import Path
 from typing import Optional, List
 from pymongo import MongoClient
 from datetime import datetime
@@ -138,55 +140,34 @@ def ms_to_mmss(milliseconds: int) -> str:
     return f"{minutes}:{seconds:02d}"
 
 
-def find_ipod() -> Optional[str]:
-    """Find the device path for a connected iPod"""
-    ipod_found = False
-
-    # check for USB connection
-    lsusb_output = subprocess.run(['lsusb'], capture_output=True, text=True)
-
-    for line in lsusb_output.stdout.split('\n'):
-        if 'iPod' in line or '05ac:' in line:  # 05ac = Apple's vendor ID
-            ipod_found = True
-            break
-
-    if not ipod_found:
-        print("No iPod found. Make sure it is connected via USB")
-        return None
-
-    # search for mount point
-    mount_output = subprocess.run(['mount'], capture_output=True, text=True)
-
-    ipod_mounts = []
-    for line in mount_output.stdout.split('\n'):
-        if any(keyword in line.lower() for keyword in ['ipod', 'apple']):
-            ipod_mounts.append(line)
-
-    if ipod_mounts:
-        for mount in ipod_mounts:
-            # parse mount point
-            match = re.search(r'on (.+?) type', mount)
-            if match:
-                return match.group(1)
-
-    # also check /proc/mounts
-    try:
-        with open('/proc/mounts', 'r') as f:
-            for line in f:
-                if 'ipod' in line.lower():
-                    parts = line.split()
-                    if len(parts) >= 2:
-                        return parts[1]
-    except Exception:
-        pass
-
+def find_rockbox_device() -> Optional[str]:
+    """Find any mounted device containing a .rockbox folder"""
+    
+    # Get all mounted partitions
+    for partition in psutil.disk_partitions(all=False):
+        # Skip system partitions on Windows
+        if partition.device.startswith('C:\\') and platform.system() == "Windows":
+            continue
+            
+        mount_point = partition.mountpoint
+        rockbox_path = Path(mount_point) / '.rockbox'
+        
+        try:
+            if rockbox_path.exists() and rockbox_path.is_dir():
+                print(f"Found Rockbox device at: {mount_point}")
+                return mount_point
+        except (PermissionError, OSError):
+            # Skip inaccessible mounts
+            continue
+    
+    print("No Rockbox device found")
     return None
 
 
 def find_music_directory() -> Optional[str]:
     """Finds the location of the 'Music' directory"""
     # find ipod
-    ipod_location = find_ipod()
+    ipod_location = find_rockbox_device()
     if not ipod_location:
         return None
 
@@ -688,7 +669,7 @@ def grab_all_metadata(db_type: str, db_path: str, album_art_dir: str,
     if db_type != 'mongo' and db_type != 'local':
         return []
 
-    if db_type == 'local' and (not db_path or len(db_path) == 0):
+    if db_type == 'local' and not db_path:
         return []
 
     # fix truncated album names before fetching metadata
@@ -956,7 +937,7 @@ def create_genre_mappings(db_type: str, db_path: str, album_art_dir: str,
     if db_type != 'mongo' and db_type != 'local':
         return []
 
-    if db_type == 'local' and (not db_path or len(db_path) == 0):
+    if db_type == 'local' and not db_path:
         return []
 
     # process filters
@@ -1251,7 +1232,7 @@ def grab_all_songs(db_type: str, db_path: str, album_art_dir: str,
     if db_type != 'mongo' and db_type != 'local':
         return []
 
-    if db_type == 'local' and (not db_path or len(db_path) == 0):
+    if db_type == 'local' and not db_path:
         return []
 
     # process filters
