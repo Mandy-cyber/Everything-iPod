@@ -5,7 +5,8 @@
 ### Table of Contents
 - [iPod Wrapped](#ipod-wrapped)
     - [Requirements](#requirements)
-    - [Getting Started](#getting-started)
+    - [Installers](#installers)
+    - [Source Code](#source-code)
 - ["The Letter"](#the-letter)
 - [Utility Scripts](#utility-scripts)
     - [`album_art_fixer.py`](#album_art_fixerpy)
@@ -35,15 +36,111 @@ This is my silly little attempt to recreate Spotify Wrapped for iPod music liste
 
 3. Last.fm API credentials, which you can get for free [here](https://www.last.fm/api)
 
-## Getting Started
+## Installers
 
 Now, you're ready to run the iPod Wrapped app! Listen to some music first with logging enabled so you actually get some results in the app though haha!
 
-1. In `ipod_wrapped/` run `python main.py`
+### Linux
 
-2. Follow the popup instructions
+**Install:**
+1. Download the latest release from [GitHub Releases](https://github.com/Mandy-cyber/Everything-iPod/releases)
+2. Extract and run the installer:
+   ```bash
+   tar -xzf ipod-wrapped-linux-x86_64.tar.gz
+   cd ipod-wrapped-linux-x86_64
+   ./install.sh
+   ```
+3. Launch from your application menu or run `~/Applications/iPodWrapped.AppImage`
 
-3. "Start Wrapped" and have fun!!
+The installer automatically detects and installs all required dependencies on Ubuntu, Debian, Fedora, Arch, and openSUSE.
+
+**Update to a New Release:**
+1. Download the new release tarball from [GitHub Releases](https://github.com/Mandy-cyber/Everything-iPod/releases)
+2. Extract it (in any location)
+3. Run the installer from the new extracted folder:
+   ```bash
+   tar -xzf ipod-wrapped-linux-x86_64.tar.gz
+   cd ipod-wrapped-linux-x86_64
+   ./install.sh
+   ```
+The installer will automatically replace the old AppImage with the new version. Your data in `~/.iPodWrapped/storage/` is preserved.
+
+**Uninstall:**
+```bash
+cd ipod-wrapped-linux-x86_64
+./uninstall.sh
+```
+
+### Windows & macOS
+Coming soon!
+
+## Source Code
+
+**1. Clone the repository**
+```bash
+git clone https://github.com/Mandy-cyber/Everything-iPod.git
+cd Everything-iPod/ipod_wrapped
+```
+
+**2. Install system dependencies**
+
+<details>
+<summary>Ubuntu/Debian</summary>
+
+```bash
+sudo apt install python3 python3-gi python3-pip \
+  libgtk-4-1 libadwaita-1-0 gir1.2-gtk-4.0 gir1.2-adw-1
+```
+</details>
+
+<details>
+<summary>Arch Linux</summary>
+
+```bash
+sudo pacman -S python python-gobject python-pip \
+  gtk4 libadwaita
+```
+</details>
+
+<details>
+<summary>Fedora</summary>
+
+```bash
+sudo dnf install python3 python3-gobject python3-pip \
+  gtk4 libadwaita
+```
+</details>
+
+<details>
+<summary>macOS</summary>
+
+```bash
+brew install python gtk4 libadwaita pygobject3
+```
+</details>
+
+<details>
+<summary>Windows</summary>
+
+1. Install [MSYS2](https://www.msys2.org/)
+2. Open MSYS2 terminal and run:
+   ```bash
+   pacman -S mingw-w64-x86_64-python mingw-w64-x86_64-gtk4 \
+     mingw-w64-x86_64-libadwaita mingw-w64-x86_64-python-gobject
+   ```
+</details>
+
+**3. Install Python dependencies**
+```bash
+pip install -r requirements.txt
+```
+
+**4. Run the app**
+```bash
+python main.py
+```
+
+Follow the popup instructions and have fun!!
 
 <br>
 
