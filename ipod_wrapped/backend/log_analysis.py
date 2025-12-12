@@ -16,7 +16,7 @@ from .constants import *
 from .constants import DEFAULT_DB_PATH
 from .creds_manager import get_credentials
 from .wrapped_helpers import (
-    find_ipod, fix_filenames_in_db, extract_song_path,
+    find_rockbox_device, fix_filenames_in_db, extract_song_path,
     find_top_genres, find_top_artists, find_top_albums, find_top_songs,
     list_dir_song_paths, extract_metadata_from_path, find_music_directory
 )
@@ -119,7 +119,7 @@ class LogAnalyser:
             str: The location of the log file
         """
         # find ipod
-        ipod_location = find_ipod()
+        ipod_location = find_rockbox_device()
         if not ipod_location:
             return None
         
