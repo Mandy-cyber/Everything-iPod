@@ -167,7 +167,7 @@ def find_rockbox_device() -> Optional[str]:
 def find_music_directory() -> Optional[str]:
     """Finds the location of the 'Music' directory"""
     # find ipod
-    ipod_location = find_ipod()
+    ipod_location = find_rockbox_device()
     if not ipod_location:
         return None
 
