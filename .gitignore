@@ -7,6 +7,7 @@
 # misc
 __pycache__
 .venv
+*-venv
 .env
 scratch*
 .vscode/
@@ -17,6 +18,15 @@ album_art/
 *.txt
 *.db
 *.log
+build/
+dist/
+*.spec
+
+# release artifacts - keep scripts, ignore builds
+ipod_wrapped/release_helpers/*.AppImage
+ipod_wrapped/release_helpers/*.tar.gz
+ipod_wrapped/release_helpers/AppDir/
+ipod_wrapped/release_helpers/linuxdeploy-*
 
 # extremely rough, still working on
 playlist-maker/*
