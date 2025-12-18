@@ -115,7 +115,7 @@ sudo dnf install python3 python3-gobject python3-pip \
 <summary>macOS</summary>
 
 ```bash
-brew install python gtk4 libadwaita pygobject3
+brew install python gtk4 libadwaita pygobject3 gtksourceview5
 ```
 </details>
 
