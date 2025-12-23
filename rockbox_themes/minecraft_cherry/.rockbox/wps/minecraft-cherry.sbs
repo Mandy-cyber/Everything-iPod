@@ -14,7 +14,7 @@
 %Cl(0,0,37,37)
 
 # Preload Images
-# %xl(U,usb_screen.bmp)
+%xl(U,usb_screen.bmp)
 %xl(L,lock_screen.bmp)
 %xl(P,player_skin.bmp)
 
@@ -59,21 +59,10 @@
 %Vi(-,60,45,153,180,3)
 
 #-----------------------------------------
-# LOCK SCREEN
-#-----------------------------------------
-%?mh<%Vd(lockscreen)|>
-
-# Clear Screen & Display BG
-%Vl(lockscreen,0,0,320,240,-)
-%xd(L)
-
-#-----------------------------------------
 # USB SCREEN
 #-----------------------------------------
-# %?if(%cs, =, 21)<%Vd(usbScreen)|>
+%?if(%cs, =, 21)<%Vd(usb)|>
 
-# Clear Screen
-# %Vl(usbScreen,0,0,320,240,-)
-
-# Load BG Image
-# %xd(U)
+# Clear Screen & Display BG
+%Vl(usb,0,0,320,240,-)
+%xd(U)
