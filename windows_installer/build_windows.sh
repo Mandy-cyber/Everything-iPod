@@ -29,7 +29,7 @@ fi
 # Create ZIP archive
 echo "Creating ZIP archive..."
 cd dist
-7z a -tzip ipod-wrapped-windows-portable.zip iPodWrapped/
+zip -r ipod-wrapped-windows-portable.zip iPodWrapped/
 cd ..
 
 echo ""
