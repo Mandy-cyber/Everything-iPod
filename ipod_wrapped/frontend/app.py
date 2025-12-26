@@ -161,7 +161,11 @@ class iPodWrappedApp(Adw.Application):
     """GTK Application wrapper"""
     def __init__(self):
         super().__init__(application_id="com.mandycyber.iPodWrapped")
-    
+
+        # force dark mode
+        style_manager = Adw.StyleManager.get_default()
+        style_manager.set_color_scheme(Adw.ColorScheme.FORCE_DARK)
+
     def do_activate(self):
         win = MainWindow(self)
         win.present()
