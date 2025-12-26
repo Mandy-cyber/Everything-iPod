@@ -1,0 +1,4 @@
+# Build dependencies for creating Windows portable executable
+# Install these in addition to the regular requirements.txt
+
+pyinstaller>=6.0.0
