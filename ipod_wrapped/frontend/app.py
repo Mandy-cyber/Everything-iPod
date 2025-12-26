@@ -2,6 +2,8 @@ import sys
 import os
 import pathlib
 import shutil
+import traceback
+from datetime import datetime
 import gi
 gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
@@ -162,19 +164,56 @@ class iPodWrappedApp(Adw.Application):
     def __init__(self):
         super().__init__(application_id="com.mandycyber.iPodWrapped")
 
+    def do_activate(self):
         # force dark mode
         style_manager = Adw.StyleManager.get_default()
         style_manager.set_color_scheme(Adw.ColorScheme.FORCE_DARK)
 
-    def do_activate(self):
         win = MainWindow(self)
         win.present()
 
 
+def setup_logging():
+    """redirect stdout/stderr to log file"""
+    try:
+        # determine log file location
+        if hasattr(sys, '_MEIPASS'):
+            # running as pyinstaller bundle - log next to exe
+            log_dir = pathlib.Path(sys.executable).parent
+        else:
+            # running from source - log in storage
+            log_dir = pathlib.Path(__file__).parent.parent / "storage"
+
+        log_dir.mkdir(parents=True, exist_ok=True)
+        log_file = log_dir / "ipod_wrapped.log"
+
+        # append to existing log
+        log_handle = open(log_file, 'a', buffering=1)
+        sys.stdout = log_handle
+        sys.stderr = log_handle
+
+        print(f"\n\n{'='*60}")
+        print(f"log session started at {datetime.now()}")
+        print(f"python version: {sys.version}")
+        print(f"executable: {sys.executable}")
+        print(f"{'='*60}\n")
+
+    except Exception as e:
+        # if logging setup fails, just continue without it
+        pass
+
+
 def run():
     """Run the application"""
-    app = iPodWrappedApp()
-    app.run(sys.argv)
+    setup_logging()
+
+    try:
+        app = iPodWrappedApp()
+        app.run(sys.argv)
+    except Exception as e:
+        print(f"\nfatal error: {e}")
+        print(traceback.format_exc())
+        raise
 
 
 if __name__ == "__main__":
