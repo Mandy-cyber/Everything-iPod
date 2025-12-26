@@ -6,6 +6,7 @@ PyInstaller spec file for iPod Wrapped Windows portable executable
 import os
 import sys
 from pathlib import Path
+import subprocess
 
 # Get the project root directory
 block_cipher = None
@@ -15,6 +16,9 @@ spec_dir = Path(SPECPATH)
 project_root = spec_dir.parent
 ipod_wrapped_dir = project_root / 'ipod_wrapped'
 
+# Find GTK installation path in MSYS2
+mingw_prefix = Path(os.environ.get('MINGW_PREFIX', 'D:/a/_temp/msys64/mingw64'))
+
 # Data files to include
 datas = [
     (str(ipod_wrapped_dir / 'gtk_style.css'), '.'),
@@ -22,6 +26,21 @@ datas = [
     (str(ipod_wrapped_dir / 'frontend' / 'desktop_icon.png'), 'frontend'),
     (str(ipod_wrapped_dir / 'storage' / 'album_art' / 'missing_album_cover.jpg'), 'storage/album_art'),
 ]
+
+# Add GTK typelibs and GI data
+gi_typelibs = mingw_prefix / 'lib' / 'girepository-1.0'
+if gi_typelibs.exists():
+    datas.append((str(gi_typelibs / '*.typelib'), 'gi_typelibs'))
+
+# Add GLib schemas
+glib_schemas = mingw_prefix / 'share' / 'glib-2.0' / 'schemas'
+if glib_schemas.exists():
+    datas.append((str(glib_schemas), 'share/glib-2.0/schemas'))
+
+# Add GTK icons and themes
+gtk_icons = mingw_prefix / 'share' / 'icons'
+if gtk_icons.exists():
+    datas.append((str(gtk_icons / 'Adwaita'), 'share/icons/Adwaita'))
 
 # Hidden imports needed for GTK and dependencies
 hiddenimports = [
@@ -55,7 +74,7 @@ a = Analysis(
     hiddenimports=hiddenimports,
     hookspath=[],
     hooksconfig={},
-    runtime_hooks=[],
+    runtime_hooks=[str(spec_dir / 'hook-gi.py')],
     excludes=[],
     win_no_prefer_redirects=False,
     win_private_assemblies=False,
