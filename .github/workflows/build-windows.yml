@@ -45,7 +45,7 @@ jobs:
         source build-venv/bin/activate
 
         # Install packages not available in MSYS2
-        pip install python-dotenv mutagen typer keyring pymongo pyinstaller
+        pip install python-dotenv mutagen typer keyring pymongo pyinstaller pillow
 
         # Verify PyInstaller is available
         pyinstaller --version
