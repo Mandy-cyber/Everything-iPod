@@ -10,7 +10,7 @@ echo "=========================================="
 
 # Install PyInstaller
 echo "Installing build dependencies..."
-pip install pyinstaller
+python -m pip install pyinstaller
 
 # Clean old builds
 echo "Cleaning old build directories..."

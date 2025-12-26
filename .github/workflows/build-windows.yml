@@ -28,6 +28,8 @@ jobs:
         install: >-
           mingw-w64-x86_64-gtk4
           mingw-w64-x86_64-libadwaita
+          mingw-w64-x86_64-python
+          mingw-w64-x86_64-python-pip
           mingw-w64-x86_64-python-gobject
           mingw-w64-x86_64-gtksourceview5
 
@@ -35,8 +37,8 @@ jobs:
       shell: msys2 {0}
       run: |
         cd ipod_wrapped
-        pip install -r requirements.txt
-        pip install pyinstaller
+        python -m pip install -r requirements.txt
+        python -m pip install pyinstaller
 
     - name: Build Windows executable
       shell: msys2 {0}
