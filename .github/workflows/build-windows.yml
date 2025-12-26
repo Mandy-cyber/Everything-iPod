@@ -36,6 +36,7 @@ jobs:
           mingw-w64-x86_64-python-requests
           mingw-w64-x86_64-python-pillow
           mingw-w64-x86_64-python-psutil
+          zip
 
     - name: Install Python dependencies in venv
       shell: msys2 {0}
