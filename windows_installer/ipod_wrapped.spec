@@ -9,7 +9,10 @@ from pathlib import Path
 
 # Get the project root directory
 block_cipher = None
-project_root = Path('..').resolve()
+# Get the directory where this spec file is located (windows_installer/)
+spec_dir = Path(SPECPATH)
+# Go up one level to project root
+project_root = spec_dir.parent
 ipod_wrapped_dir = project_root / 'ipod_wrapped'
 
 # Data files to include
