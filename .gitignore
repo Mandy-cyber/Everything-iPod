@@ -23,12 +23,10 @@ dist/
 *.spec
 
 # release artifacts - keep scripts, ignore builds
-ipod_wrapped/release_helpers/*.AppImage
-ipod_wrapped/release_helpers/*.tar.gz
-ipod_wrapped/release_helpers/AppDir/
-ipod_wrapped/release_helpers/linuxdeploy-*
+ipod_wrapped/release_helpers/*
 
 # extremely rough, still working on
+rockbox_themes/minecraft_plains/*
 playlist-maker/*
 guide-docs/
 helpers/
