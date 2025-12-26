@@ -8,10 +8,6 @@ echo "=========================================="
 echo "iPod Wrapped - Windows Build Script"
 echo "=========================================="
 
-# Install PyInstaller
-echo "Installing build dependencies..."
-python -m pip install pyinstaller
-
 # Clean old builds
 echo "Cleaning old build directories..."
 rm -rf build dist

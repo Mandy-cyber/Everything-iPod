@@ -32,17 +32,30 @@ jobs:
           mingw-w64-x86_64-python-pip
           mingw-w64-x86_64-python-gobject
           mingw-w64-x86_64-gtksourceview5
+          mingw-w64-x86_64-python-pandas
+          mingw-w64-x86_64-python-requests
+          mingw-w64-x86_64-python-pillow
+          mingw-w64-x86_64-python-pymongo
+          mingw-w64-x86_64-python-psutil
+          mingw-w64-x86_64-python-pyinstaller
 
-    - name: Install Python dependencies
+    - name: Install remaining Python dependencies
       shell: msys2 {0}
       run: |
-        cd ipod_wrapped
-        python -m pip install -r requirements.txt
-        python -m pip install pyinstaller
+        # Create a virtual environment
+        python -m venv build-venv
+        source build-venv/bin/activate
+
+        # Install packages not available in MSYS2
+        pip install python-dotenv mutagen typer keyring
+
+        # Verify PyInstaller is available
+        pyinstaller --version
 
     - name: Build Windows executable
       shell: msys2 {0}
       run: |
+        source build-venv/bin/activate
         cd windows_installer
         bash build_windows.sh
 
