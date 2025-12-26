@@ -40,15 +40,16 @@ jobs:
     - name: Install Python dependencies in venv
       shell: msys2 {0}
       run: |
-        # Create a virtual environment
-        python -m venv build-venv
+        # Create a virtual environment with access to system packages
+        python -m venv --system-site-packages build-venv
         source build-venv/bin/activate
 
         # Install packages not available in MSYS2
-        pip install python-dotenv mutagen typer keyring pymongo pyinstaller pillow
+        pip install python-dotenv mutagen typer keyring pymongo pyinstaller
 
-        # Verify PyInstaller is available
+        # Verify PyInstaller and Pillow are available
         pyinstaller --version
+        python -c "from PIL import Image; print('Pillow OK')"
 
     - name: Build Windows executable
       shell: msys2 {0}
