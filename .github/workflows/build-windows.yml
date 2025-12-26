@@ -35,11 +35,9 @@ jobs:
           mingw-w64-x86_64-python-pandas
           mingw-w64-x86_64-python-requests
           mingw-w64-x86_64-python-pillow
-          mingw-w64-x86_64-python-pymongo
           mingw-w64-x86_64-python-psutil
-          mingw-w64-x86_64-python-pyinstaller
 
-    - name: Install remaining Python dependencies
+    - name: Install Python dependencies in venv
       shell: msys2 {0}
       run: |
         # Create a virtual environment
@@ -47,7 +45,7 @@ jobs:
         source build-venv/bin/activate
 
         # Install packages not available in MSYS2
-        pip install python-dotenv mutagen typer keyring
+        pip install python-dotenv mutagen typer keyring pymongo pyinstaller
 
         # Verify PyInstaller is available
         pyinstaller --version
