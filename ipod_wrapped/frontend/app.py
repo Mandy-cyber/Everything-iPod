@@ -73,10 +73,10 @@ class MainWindow(Adw.ApplicationWindow):
         self.wrapped_page = WrappedPage(db_type, db_path, album_art_dir, self.toggle_bottom_bar)
         
         # page titles w/icons
-        self.stack.add_titled_with_icon(self.genres_page, "genres", "Genres", "org.gnome.Nautilus-symbolic")
+        self.stack.add_titled_with_icon(self.genres_page, "genres", "Genres", "view-list-symbolic")
         self.stack.add_titled_with_icon(self.albums_page, "albums", "Albums", "media-optical-symbolic")
         self.stack.add_titled_with_icon(self.songs_page, "songs", "Songs", "audio-x-generic-symbolic")
-        self.stack.add_titled_with_icon(self.wrapped_page, "wrapped", "Wrapped", "emblem-favorite-symbolic")
+        self.stack.add_titled_with_icon(self.wrapped_page, "wrapped", "Wrapped", "starred-symbolic")
         
         # create view switcher
         view_switcher = Adw.ViewSwitcher()
@@ -208,16 +208,11 @@ def run():
     """Run the application"""
     try:
         setup_logging()
-        print("logging initialized")
-
         app = iPodWrappedApp()
-        print("app created")
-
         app.run(sys.argv)
     except Exception as e:
-        print(f"\nfatal error during startup: {e}")
+        print(f"\nfatal error: {e}")
         print(traceback.format_exc())
-        time.sleep(10)  # keep console open to see error
         raise
 
 

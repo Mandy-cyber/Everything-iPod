@@ -42,6 +42,11 @@ gtk_icons = mingw_prefix / 'share' / 'icons'
 if gtk_icons.exists():
     datas.append((str(gtk_icons / 'Adwaita'), 'share/icons/Adwaita'))
 
+# Add GtkSourceView language specs and style schemes
+gtksourceview_data = mingw_prefix / 'share' / 'gtksourceview-5'
+if gtksourceview_data.exists():
+    datas.append((str(gtksourceview_data), 'share/gtksourceview-5'))
+
 # Hidden imports needed for GTK and dependencies
 hiddenimports = [
     'gi',
@@ -98,7 +103,7 @@ exe = EXE(
     bootloader_ignore_signals=False,
     strip=False,
     upx=True,
-    console=True,  # enable console for debugging, disable later
+    console=False,
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,

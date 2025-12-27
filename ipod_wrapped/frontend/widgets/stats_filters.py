@@ -480,11 +480,13 @@ class StatsFilters:
         car.set_allow_mouse_drag(True)
         car.set_allow_long_swipes(True)
         car.set_spacing(10)
-        
+        car.set_can_focus(True)
+        car.set_interactive(True)
+
         # add pages
         pages = self._create_visual_mode_pages(results)
         [car.append(page) for page in pages]
-        
+
         return car
     
     def _show_stats(self, stats_pane: Gtk.Box, db_info: dict) -> None:
