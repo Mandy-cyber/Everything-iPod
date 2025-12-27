@@ -27,7 +27,16 @@ datas = [
     (str(ipod_wrapped_dir / 'storage' / 'album_art' / 'missing_album_cover.jpg'), 'storage/album_art'),
 ]
 
-# Add GTK typelibs and GI data
+# Collect GtkSourceView shared libraries
+binaries = []
+gtksourceview_libs = mingw_prefix / 'bin'
+if gtksourceview_libs.exists():
+    # Add GtkSourceView DLL
+    gtksource_dll = gtksourceview_libs / 'libgtksourceview-5-0.dll'
+    if gtksource_dll.exists():
+        binaries.append((str(gtksource_dll), '.'))
+
+# Add GTK typelibs and GI data (includes all typelibs, including GtkSource)
 gi_typelibs = mingw_prefix / 'lib' / 'girepository-1.0'
 if gi_typelibs.exists():
     datas.append((str(gi_typelibs), 'gi_typelibs'))
@@ -78,7 +87,7 @@ hiddenimports = [
 a = Analysis(
     [str(ipod_wrapped_dir / 'main.py')],
     pathex=[str(ipod_wrapped_dir)],
-    binaries=[],
+    binaries=binaries,
     datas=datas,
     hiddenimports=hiddenimports,
     hookspath=[],

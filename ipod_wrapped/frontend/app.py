@@ -3,7 +3,6 @@ import os
 import pathlib
 import shutil
 import traceback
-import time
 from datetime import datetime
 import gi
 gi.require_version('Gtk', '4.0')
@@ -197,6 +196,14 @@ def setup_logging():
         print(f"log session started at {datetime.now()}")
         print(f"python version: {sys.version}")
         print(f"executable: {sys.executable}")
+
+        # log environment variables for debugging
+        if hasattr(sys, '_MEIPASS'):
+            print(f"_MEIPASS: {sys._MEIPASS}")
+            print(f"GI_TYPELIB_PATH: {os.environ.get('GI_TYPELIB_PATH', 'NOT SET')}")
+            print(f"XDG_DATA_DIRS: {os.environ.get('XDG_DATA_DIRS', 'NOT SET')}")
+            print(f"GSETTINGS_SCHEMA_DIR: {os.environ.get('GSETTINGS_SCHEMA_DIR', 'NOT SET')}")
+
         print(f"{'='*60}\n")
 
     except Exception as e:
