@@ -3,6 +3,7 @@ import math
 import gi
 gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
+gi.require_foreign('cairo')
 from gi.repository import Gtk, Gdk, Gio, Pango, GdkPixbuf, Adw, GLib
 
 from backend import grab_all_songs, ms_to_mmss
