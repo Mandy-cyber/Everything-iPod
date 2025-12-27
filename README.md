@@ -7,7 +7,9 @@
     - [Requirements](#requirements)
     - [Installers](#installers)
     - [Source Code](#source-code)
-- ["The Letter"](#the-letter)
+- [Custom Themes](#custom-themes)
+    - ["The Letter"](#the-letter)
+    - [Minecraft Cherry Biome](#minecraft-cherry-biome)
 - [Utility Scripts](#utility-scripts)
     - [`album_art_fixer.py`](#album_art_fixerpy)
     - [`sync_ipod.sh`](#sync_ipodsh)
@@ -36,9 +38,9 @@ This is my silly little attempt to recreate Spotify Wrapped for iPod music liste
 
 3. Last.fm API credentials, which you can get for free [here](https://www.last.fm/api)
 
-## Installers
-
 Now, you're ready to run the iPod Wrapped app! Listen to some music first with logging enabled so you actually get some results in the app though haha!
+
+## Installers
 
 ### Windows
 
@@ -131,8 +133,10 @@ Follow the popup instructions and have fun!!
 
 <br>
 
-# "The Letter"
+# Custom Themes
 > N.B. Like most other rockbox themes, you'll need the default Rockbox font pack downloaded.
+
+## "The Letter"
 
 A custom rockbox theme I drew and coded to act as a 'love letter' to physical media. It adjusts the lockscreen, main, while-playing, and USB, screens to look as follows:
 
@@ -148,10 +152,26 @@ A custom rockbox theme I drew and coded to act as a 'love letter' to physical me
 Download [here](https://themes.rockbox.org/index.php?themeid=3910&target=ipod6g), or
 ```bash
 # copy the theme over to your iPod
-cp -r rockbox_themes/the_letter/.rockbox/. /path/to/iPod/.rockbox/dir
+cp -r rockbox_themes/the_letter/.rockbox/. /path/to/iPod/.rockbox/
 ```
 
-The current rockbox theme doesn't have the lockscreen--I'll eventually reupload with the lockscreen and the quick screen (once I figure it out). Also if you or someone you love are good with making custom themes PLEASE i have questions. Single-handedly hardest coding project I've attempted purely in terms of "where the hell is helpful documentation"... Yes I *have read the __outdated__ manual and wiki*.
+The current rockbox theme doesn't have the lockscreen--I'll eventually reupload with the lockscreen.
+
+<br>
+
+## Minecraft Cherry Biome
+
+A custom rockbox theme inspired by Minecraft's cherry blossom biome. It adjusts the lockscreen, main, while-playing, and USB, screens to look as follows:
+
+<br><br>
+
+**Usage**
+
+Download [here](), or
+```bash
+# copy the theme over to your iPod
+cp -r rockbox_themes/minecraft_cherry/.rockbox/. /path/to/iPod/.rockbox/
+```
 
 <br>
 
