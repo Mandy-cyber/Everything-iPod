@@ -145,7 +145,7 @@ A custom rockbox theme I drew and coded to act as a 'love letter' to physical me
 <img width="320" height="240" alt="wbs" src="https://github.com/user-attachments/assets/5e7880ee-3de1-449f-9f9d-7cb7763c376c" />
 <img width="320" height="240" alt="usb" src="https://github.com/user-attachments/assets/fd65bada-ab9c-4989-8e39-dc8f29a22a16" />
 
-<br><br>
+<br>
 
 **Usage**
 
@@ -163,11 +163,16 @@ The current rockbox theme doesn't have the lockscreen--I'll eventually reupload 
 
 A custom rockbox theme inspired by Minecraft's cherry blossom biome. It adjusts the lockscreen, main, while-playing, and USB, screens to look as follows:
 
-<br><br>
+<img width="320" height="240" alt="1" src="https://github.com/user-attachments/assets/a0b55bd4-e2b0-48f0-a476-bc1b57f7f127" />
+<img width="320" height="240" alt="2" src="https://github.com/user-attachments/assets/55fb2715-45be-4cfb-9cd2-68e05361a362" />
+<img width="320" height="240" alt="3" src="https://github.com/user-attachments/assets/a1ba14a0-7c63-4d76-8e4a-31eebf1107fc" />
+<img width="320" height="240" alt="4" src="https://github.com/user-attachments/assets/7d27aecb-8f13-43f6-8c2f-aba16747b930" />
+
+<br>
 
 **Usage**
 
-Download [here](), or
+Download [here](https://themes.rockbox.org/index.php?themeid=3926&target=ipod6g), or
 ```bash
 # copy the theme over to your iPod
 cp -r rockbox_themes/minecraft_cherry/.rockbox/. /path/to/iPod/.rockbox/
@@ -228,13 +233,22 @@ If you want to support, you can help via:
 ## ipod_wrapped
 - [x] Proper 'Getting Started' page
 - [x] Pass in Last.fm keys in UI
-- [ ] Add/Adjust logging
+- [x] Add/Adjust logging
 - [x] Support multiple formats of Music dir/song names
 - [ ] Add functionality to update album genres in the UI (currently only via utility script)
 - [ ] Add proper rate limiting logic for log analysis
-- [ ] Disable light mode LOL
+- [x] Disable light mode LOL
 - [ ] Fix 'sorter' not bringing user back to top of table in songs page
 - [ ] Fix wonky resizing in songs page
+- [ ] Make text size responsive
+
+<br>
+
+- [x] Windows portable exe
+- [ ] Mac `.app`
+- [ ] Linux appimage
+
+<br>
 
 - [ ] Add music player functionality
 - [ ] On bottom bar click, show expanded view
@@ -244,9 +258,9 @@ If you want to support, you can help via:
 
 ### rockbox_theme
 - [x] Fix and uncomment "the letter" lockscreen
-- [ ] Minecraft theme
-- [ ] Add a quickscreen to "the letter"
+- [x] Minecraft theme
 - [ ] Create a vinyl theme
+- [ ] Create a neofetch theme
 
 ### utility_scripts
 - [ ] Accept args for all scripts instead of code editing
