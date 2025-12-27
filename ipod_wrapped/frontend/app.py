@@ -3,6 +3,7 @@ import os
 import pathlib
 import shutil
 import traceback
+import time
 from datetime import datetime
 import gi
 gi.require_version('Gtk', '4.0')
@@ -205,14 +206,18 @@ def setup_logging():
 
 def run():
     """Run the application"""
-    setup_logging()
-
     try:
+        setup_logging()
+        print("logging initialized")
+
         app = iPodWrappedApp()
+        print("app created")
+
         app.run(sys.argv)
     except Exception as e:
-        print(f"\nfatal error: {e}")
+        print(f"\nfatal error during startup: {e}")
         print(traceback.format_exc())
+        time.sleep(10)  # keep console open to see error
         raise
 
 
