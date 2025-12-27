@@ -31,6 +31,7 @@ jobs:
           mingw-w64-x86_64-python
           mingw-w64-x86_64-python-pip
           mingw-w64-x86_64-python-gobject
+          mingw-w64-x86_64-python-cairo
           mingw-w64-x86_64-gtksourceview5
           mingw-w64-x86_64-python-pandas
           mingw-w64-x86_64-python-requests
