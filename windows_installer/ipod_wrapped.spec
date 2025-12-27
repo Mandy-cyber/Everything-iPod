@@ -30,7 +30,7 @@ datas = [
 # Add GTK typelibs and GI data
 gi_typelibs = mingw_prefix / 'lib' / 'girepository-1.0'
 if gi_typelibs.exists():
-    datas.append((str(gi_typelibs / '*.typelib'), 'gi_typelibs'))
+    datas.append((str(gi_typelibs), 'gi_typelibs'))
 
 # Add GLib schemas
 glib_schemas = mingw_prefix / 'share' / 'glib-2.0' / 'schemas'
