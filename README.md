@@ -43,14 +43,14 @@ Now, you're ready to run the iPod Wrapped app! Listen to some music first with l
 ### Windows
 
 **Install:**
-1. Download the latest `ipod-wrapped-windows-portable.zip` from [GitHub Releases](https://github.com/Mandy-cyber/Everything-iPod/releases)
+1. Download the latest `ipod-wrapped-windows.zip` from [GitHub Releases](https://github.com/Mandy-cyber/Everything-iPod/releases)
 2. Extract the ZIP file to any location (e.g., Desktop, Documents, or a USB drive)
 3. Double-click `iPodWrapped.exe` to run
 
 The app is completely portable - no installation required! All your data is stored in the `storage/` folder next to the executable.
 
 **Update to a New Version:**
-1. Download the new `ipod-wrapped-windows-portable.zip` from [GitHub Releases](https://github.com/Mandy-cyber/Everything-iPod/releases)
+1. Download the new `ipod-wrapped-windows.zip` from [GitHub Releases](https://github.com/Mandy-cyber/Everything-iPod/releases)
 2. Extract it to the same location as your current installation
 3. When prompted, choose to replace the files
 4. Your data in the `storage/` folder will be preserved

@@ -29,12 +29,12 @@ fi
 # Create ZIP archive
 echo "Creating ZIP archive..."
 cd dist
-zip -r ipod-wrapped-windows-portable.zip iPodWrapped/
+zip -r ipod-wrapped-windows.zip iPodWrapped/
 cd ..
 
 echo ""
 echo "=========================================="
 echo "BUILD COMPLETE!"
 echo "=========================================="
-echo "Package: dist/ipod-wrapped-windows-portable.zip"
-ls -lh dist/ipod-wrapped-windows-portable.zip
+echo "Package: dist/ipod-wrapped-windows.zip"
+ls -lh dist/ipod-wrapped-windows.zip
