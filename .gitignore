@@ -21,6 +21,8 @@ album_art/
 build/
 dist/
 *.spec
+!windows_installer/*.spec
+!windows_installer/*.txt
 
 # release artifacts - keep scripts, ignore builds
 ipod_wrapped/release_helpers/*

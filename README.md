@@ -40,38 +40,25 @@ This is my silly little attempt to recreate Spotify Wrapped for iPod music liste
 
 Now, you're ready to run the iPod Wrapped app! Listen to some music first with logging enabled so you actually get some results in the app though haha!
 
-### Linux
+### Windows
 
 **Install:**
-1. Download the latest release from [GitHub Releases](https://github.com/Mandy-cyber/Everything-iPod/releases)
-2. Extract and run the installer:
-   ```bash
-   tar -xzf ipod-wrapped-linux-x86_64.tar.gz
-   cd ipod-wrapped-linux-x86_64
-   ./install.sh
-   ```
-3. Launch from your application menu or run `~/Applications/iPodWrapped.AppImage`
+1. Download the latest `ipod-wrapped-windows.zip` from [GitHub Releases](https://github.com/Mandy-cyber/Everything-iPod/releases)
+2. Extract the ZIP file to any location (e.g., Desktop, Documents, or a USB drive)
+3. Double-click `iPodWrapped.exe` to run
 
-The installer automatically detects and installs all required dependencies on Ubuntu, Debian, Fedora, Arch, and openSUSE.
+The app is completely portable - no installation required! All your data is stored in the `storage/` folder next to the executable.
 
-**Update to a New Release:**
-1. Download the new release tarball from [GitHub Releases](https://github.com/Mandy-cyber/Everything-iPod/releases)
-2. Extract it (in any location)
-3. Run the installer from the new extracted folder:
-   ```bash
-   tar -xzf ipod-wrapped-linux-x86_64.tar.gz
-   cd ipod-wrapped-linux-x86_64
-   ./install.sh
-   ```
-The installer will automatically replace the old AppImage with the new version. Your data in `~/.iPodWrapped/storage/` is preserved.
+**Update to a New Version:**
+1. Download the new `ipod-wrapped-windows.zip` from [GitHub Releases](https://github.com/Mandy-cyber/Everything-iPod/releases)
+2. Extract it to the same location as your current installation
+3. When prompted, choose to replace the files
+4. Your data in the `storage/` folder will be preserved
 
 **Uninstall:**
-```bash
-cd ipod-wrapped-linux-x86_64
-./uninstall.sh
-```
+Simply delete the entire `iPodWrapped/` folder. All data is self-contained.
 
-### Windows & macOS
+### Linux & macOS
 Coming soon!
 
 ## Source Code

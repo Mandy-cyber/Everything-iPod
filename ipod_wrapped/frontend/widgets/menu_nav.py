@@ -20,7 +20,7 @@ def create_menu_nav(overlay: Gtk.Overlay, window: Gtk.ApplicationWindow,
     """
     # main icon
     menu_btn = Gtk.Button()
-    menu_btn.set_icon_name('document-properties-symbolic')
+    menu_btn.set_icon_name('open-menu-symbolic')
     menu_btn.add_css_class('flat')
     menu_btn.add_css_class('circular')
     menu_btn.add_css_class('nav-menu-icon')
@@ -63,7 +63,7 @@ def _create_extended_menu_nav(window: Gtk.ApplicationWindow,
 
     # start wrapped button
     start_btn = Gtk.Button()
-    start_btn.set_icon_name('system-restart-symbolic')
+    start_btn.set_icon_name('media-playback-start-symbolic')
     start_btn.add_css_class('flat')
     start_btn.add_css_class('circular')
     start_btn.add_css_class('nav-start-icon')

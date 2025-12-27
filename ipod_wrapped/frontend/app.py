@@ -2,6 +2,8 @@ import sys
 import os
 import pathlib
 import shutil
+import traceback
+from datetime import datetime
 import gi
 gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
@@ -70,10 +72,10 @@ class MainWindow(Adw.ApplicationWindow):
         self.wrapped_page = WrappedPage(db_type, db_path, album_art_dir, self.toggle_bottom_bar)
         
         # page titles w/icons
-        self.stack.add_titled_with_icon(self.genres_page, "genres", "Genres", "org.gnome.Nautilus-symbolic")
+        self.stack.add_titled_with_icon(self.genres_page, "genres", "Genres", "view-list-symbolic")
         self.stack.add_titled_with_icon(self.albums_page, "albums", "Albums", "media-optical-symbolic")
         self.stack.add_titled_with_icon(self.songs_page, "songs", "Songs", "audio-x-generic-symbolic")
-        self.stack.add_titled_with_icon(self.wrapped_page, "wrapped", "Wrapped", "emblem-favorite-symbolic")
+        self.stack.add_titled_with_icon(self.wrapped_page, "wrapped", "Wrapped", "starred-symbolic")
         
         # create view switcher
         view_switcher = Adw.ViewSwitcher()
@@ -161,16 +163,64 @@ class iPodWrappedApp(Adw.Application):
     """GTK Application wrapper"""
     def __init__(self):
         super().__init__(application_id="com.mandycyber.iPodWrapped")
-    
+
     def do_activate(self):
+        # force dark mode
+        style_manager = Adw.StyleManager.get_default()
+        style_manager.set_color_scheme(Adw.ColorScheme.FORCE_DARK)
+
         win = MainWindow(self)
         win.present()
 
 
+def setup_logging():
+    """redirect stdout/stderr to log file"""
+    try:
+        # determine log file location
+        if hasattr(sys, '_MEIPASS'):
+            # running as pyinstaller bundle - log next to exe
+            log_dir = pathlib.Path(sys.executable).parent
+        else:
+            # running from source - log in storage
+            log_dir = pathlib.Path(__file__).parent.parent / "storage"
+
+        log_dir.mkdir(parents=True, exist_ok=True)
+        log_file = log_dir / "ipod_wrapped.log"
+
+        # append to existing log
+        log_handle = open(log_file, 'a', buffering=1)
+        sys.stdout = log_handle
+        sys.stderr = log_handle
+
+        print(f"\n\n{'='*60}")
+        print(f"log session started at {datetime.now()}")
+        print(f"python version: {sys.version}")
+        print(f"executable: {sys.executable}")
+
+        # log environment variables for debugging
+        if hasattr(sys, '_MEIPASS'):
+            print(f"_MEIPASS: {sys._MEIPASS}")
+            print(f"GI_TYPELIB_PATH: {os.environ.get('GI_TYPELIB_PATH', 'NOT SET')}")
+            print(f"XDG_DATA_DIRS: {os.environ.get('XDG_DATA_DIRS', 'NOT SET')}")
+            print(f"GSETTINGS_SCHEMA_DIR: {os.environ.get('GSETTINGS_SCHEMA_DIR', 'NOT SET')}")
+
+        print(f"{'='*60}\n")
+
+    except Exception as e:
+        # if logging setup fails, just continue without it
+        pass
+
+
 def run():
     """Run the application"""
-    app = iPodWrappedApp()
-    app.run(sys.argv)
+    try:
+        setup_logging()
+        app = iPodWrappedApp()
+        app.run(sys.argv)
+    except Exception as e:
+        print(f"\nfatal error: {e}")
+        print(traceback.format_exc())
+        raise
 
 
 if __name__ == "__main__":
