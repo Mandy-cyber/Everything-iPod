@@ -240,7 +240,8 @@ class StatsFilters:
         
         # add code
         cleaned_results = self._hide_album_art_field(results)
-        buffer.set_text(json.dumps(cleaned_results, indent=4, ensure_ascii=False))
+        text = json.dumps(cleaned_results, indent=4, ensure_ascii=False)
+        buffer.set_text(text, len(text))
         
         # set light mode
         scheme_manager = GtkSource.StyleSchemeManager.get_default()
