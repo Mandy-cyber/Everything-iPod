@@ -56,6 +56,8 @@ hiddenimports = [
     'gi.repository.Gdk',
     'cairo',
     '_cairo',
+    'gi._gi_cairo',
+    'gi._gi',
     'PIL',
     'PIL._imaging',
     'pandas',
