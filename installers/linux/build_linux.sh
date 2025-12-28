@@ -28,6 +28,7 @@ cp -r dist/iPodWrapped/* AppDir/usr/bin/
 
 # Create desktop entry
 echo "Creating desktop entry..."
+mkdir -p AppDir/usr/share/applications
 cat > AppDir/usr/share/applications/ipod-wrapped.desktop << 'EOF'
 [Desktop Entry]
 Type=Application
@@ -38,6 +39,9 @@ Icon=ipod-wrapped
 Categories=AudioVideo;Audio;Player;
 Terminal=false
 EOF
+
+# Also create desktop file in AppDir root (required by appimagetool)
+cp AppDir/usr/share/applications/ipod-wrapped.desktop AppDir/ipod-wrapped.desktop
 
 # Copy icon
 echo "Copying icon..."
