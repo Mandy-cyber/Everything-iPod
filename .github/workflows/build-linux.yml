@@ -1,0 +1,80 @@
+name: Build Linux AppImage
+
+on:
+  push:
+    branches:
+      - linux-installer
+  workflow_dispatch:
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y \
+            libgtk-4-dev \
+            libadwaita-1-dev \
+            libgtksourceview-5-dev \
+            libgirepository1.0-dev \
+            gobject-introspection \
+            gir1.2-gtk-4.0 \
+            gir1.2-adw-1 \
+            gir1.2-gtksource-5 \
+            python3 \
+            python3-pip \
+            python3-venv \
+            python3-gi \
+            python3-gi-cairo \
+            python3-cairo \
+            libcairo2-dev \
+            pkg-config \
+            libfuse2 \
+            file \
+            desktop-file-utils
+
+      - name: Install Python dependencies
+        run: |
+          # Use system Python with venv for additional packages
+          /usr/bin/python3 -m venv --system-site-packages build-venv
+          source build-venv/bin/activate
+
+          # Verify system packages are accessible
+          python3 -c "import gi; print('PyGObject:', gi.__version__)"
+          python3 -c "import cairo; print('Cairo:', cairo.version)"
+
+          # Install additional dependencies
+          pip install pandas mutagen requests python-dotenv typer pymongo psutil pillow keyring
+          pip install -r installers/linux/requirements-build.txt
+
+          # Verify PyInstaller
+          pyinstaller --version
+
+      - name: Build AppImage
+        run: |
+          source build-venv/bin/activate
+          cd installers/linux
+          bash build_linux.sh
+
+      - name: Verify AppImage
+        run: |
+          ls -lh installers/linux/iPod-Wrapped-x86_64.AppImage
+          file installers/linux/iPod-Wrapped-x86_64.AppImage
+
+      - name: Upload AppImage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-appimage
+          path: installers/linux/iPod-Wrapped-x86_64.AppImage
+          retention-days: 30
+
+      - name: Display build info
+        run: |
+          echo "Build completed successfully!"
+          echo "Download the artifact from the Actions tab"
+          ls -lh installers/linux/iPod-Wrapped-x86_64.AppImage

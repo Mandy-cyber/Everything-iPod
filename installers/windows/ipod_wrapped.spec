@@ -10,10 +10,10 @@ import subprocess
 
 # Get the project root directory
 block_cipher = None
-# Get the directory where this spec file is located (windows_installer/)
+# Get the directory where this spec file is located (installers/windows/)
 spec_dir = Path(SPECPATH)
-# Go up one level to project root
-project_root = spec_dir.parent
+# Go up two levels to project root
+project_root = spec_dir.parent.parent
 ipod_wrapped_dir = project_root / 'ipod_wrapped'
 
 # Find GTK installation path in MSYS2
