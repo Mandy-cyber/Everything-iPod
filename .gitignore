@@ -21,8 +21,12 @@ album_art/
 build/
 dist/
 *.spec
-!windows_installer/*.spec
-!windows_installer/*.txt
+*.AppImage
+AppDir/
+appimagetool-*.AppImage
+!installers/**/*.spec
+!installers/**/*.txt
+!installers/**/*.sh
 
 # release artifacts - keep scripts, ignore builds
 ipod_wrapped/release_helpers/*

@@ -51,14 +51,14 @@ jobs:
         shell: msys2 {0}
         run: |
           source build-venv/bin/activate
-          cd windows_installer
+          cd installers/windows
           bash build_windows.sh
 
       - name: Upload Windows artifact
         uses: actions/upload-artifact@v4
         with:
           name: windows-build
-          path: windows_installer/dist/ipod-wrapped-windows.zip
+          path: installers/windows/dist/ipod-wrapped-windows.zip
           retention-days: 90
 
   create-release:

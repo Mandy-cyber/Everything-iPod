@@ -1,0 +1,72 @@
+name: Build Linux AppImage
+
+on:
+  push:
+    branches:
+      - linux-installer
+  workflow_dispatch:
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install system dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y \
+            libgtk-4-dev \
+            libadwaita-1-dev \
+            libgtksourceview-5-dev \
+            libgirepository1.0-dev \
+            gobject-introspection \
+            gir1.2-gtk-4.0 \
+            gir1.2-adw-1 \
+            gir1.2-gtksource-5 \
+            python3-gi \
+            python3-cairo \
+            libcairo2-dev \
+            pkg-config \
+            libfuse2 \
+            file \
+            desktop-file-utils
+
+      - name: Install Python dependencies
+        run: |
+          python -m venv --system-site-packages build-venv
+          source build-venv/bin/activate
+          pip install -r ipod_wrapped/requirements.txt
+          pip install -r installers/linux/requirements-build.txt
+          pyinstaller --version
+
+      - name: Build AppImage
+        run: |
+          source build-venv/bin/activate
+          cd installers/linux
+          bash build_linux.sh
+
+      - name: Verify AppImage
+        run: |
+          ls -lh installers/linux/iPod-Wrapped-x86_64.AppImage
+          file installers/linux/iPod-Wrapped-x86_64.AppImage
+
+      - name: Upload AppImage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-appimage
+          path: installers/linux/iPod-Wrapped-x86_64.AppImage
+          retention-days: 30
+
+      - name: Display build info
+        run: |
+          echo "Build completed successfully!"
+          echo "Download the artifact from the Actions tab"
+          ls -lh installers/linux/iPod-Wrapped-x86_64.AppImage
