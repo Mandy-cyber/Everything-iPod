@@ -7,6 +7,57 @@ on:
   workflow_dispatch:
 
 jobs:
+  build-linux:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y \
+            libgtk-4-dev \
+            libadwaita-1-dev \
+            libgtksourceview-5-dev \
+            libgirepository1.0-dev \
+            gobject-introspection \
+            gir1.2-gtk-4.0 \
+            gir1.2-adw-1 \
+            gir1.2-gtksource-5 \
+            python3 \
+            python3-pip \
+            python3-venv \
+            python3-gi \
+            python3-gi-cairo \
+            python3-cairo \
+            libcairo2-dev \
+            pkg-config \
+            libfuse2 \
+            file \
+            desktop-file-utils
+
+      - name: Install Python dependencies
+        run: |
+          /usr/bin/python3 -m venv --system-site-packages build-venv
+          source build-venv/bin/activate
+          pip install pandas mutagen requests python-dotenv typer pymongo psutil pillow keyring
+          pip install -r installers/linux/requirements-build.txt
+
+      - name: Build AppImage
+        run: |
+          source build-venv/bin/activate
+          cd installers/linux
+          bash build_linux.sh
+
+      - name: Upload Linux artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-build
+          path: installers/linux/iPod-Wrapped-x86_64.AppImage
+          retention-days: 90
+
   build-windows:
     runs-on: windows-latest
 
@@ -62,7 +113,7 @@ jobs:
           retention-days: 90
 
   create-release:
-    needs: build-windows
+    needs: [build-linux, build-windows]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
 
@@ -71,6 +122,12 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Download Linux artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: linux-build
+          path: artifacts
 
       - name: Download Windows artifact
         uses: actions/download-artifact@v4
@@ -93,7 +150,9 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
-          files: artifacts/ipod-wrapped-windows.zip
+          files: |
+            artifacts/iPod-Wrapped-x86_64.AppImage
+            artifacts/ipod-wrapped-windows.zip
           draft: true
           prerelease: false
           generate_release_notes: true
