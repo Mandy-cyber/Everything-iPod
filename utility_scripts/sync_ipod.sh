@@ -35,9 +35,10 @@ echo -e "==================================================================\n"
 
 # sync local Music directory with iPOD Music directory
 echo "Starting sync with iPod..."
-rsync -avh --progress \
+rsync -avh --progress --ignore-times --size-only \
     --include="*.flac" \
     --include="*.mp3" \
+    --include="*.jpg" \
     --include="*/" \
     --exclude="*" \
     $1 $2
