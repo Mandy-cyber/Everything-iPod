@@ -41,9 +41,9 @@ EOF
 
 # Copy icon
 echo "Copying icon..."
-cp ../ipod_wrapped/frontend/desktop_icon.png AppDir/usr/share/icons/hicolor/256x256/apps/ipod-wrapped.png
-cp ../ipod_wrapped/frontend/desktop_icon.png AppDir/ipod-wrapped.png
-cp ../ipod_wrapped/frontend/desktop_icon.png AppDir/.DirIcon
+cp ../../ipod_wrapped/frontend/desktop_icon.png AppDir/usr/share/icons/hicolor/256x256/apps/ipod-wrapped.png
+cp ../../ipod_wrapped/frontend/desktop_icon.png AppDir/ipod-wrapped.png
+cp ../../ipod_wrapped/frontend/desktop_icon.png AppDir/.DirIcon
 
 # Create AppRun script
 echo "Creating AppRun script..."
