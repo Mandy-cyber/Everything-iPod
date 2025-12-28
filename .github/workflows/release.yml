@@ -112,8 +112,49 @@ jobs:
           path: installers/windows/dist/ipod-wrapped-windows.zip
           retention-days: 90
 
+  build-macos:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Homebrew dependencies
+        run: |
+          brew install gtk4 libadwaita gtksourceview5 pygobject3
+
+      - name: Create virtual environment
+        run: |
+          python3 -m venv build-venv
+          source build-venv/bin/activate
+          pip install pandas mutagen requests python-dotenv typer pymongo psutil pillow keyring pyinstaller
+          pyinstaller --version
+
+      - name: Build macOS app
+        run: |
+          source build-venv/bin/activate
+          cd installers/macos
+          bash build_macos.sh
+
+      - name: Create DMG
+        run: |
+          cd installers/macos/dist
+          hdiutil create -volname "iPod Wrapped" -srcfolder "iPod Wrapped.app" -ov -format UDZO iPod-Wrapped-macOS.dmg
+
+      - name: Upload macOS artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-build
+          path: installers/macos/dist/iPod-Wrapped-macOS.dmg
+          retention-days: 90
+
   create-release:
-    needs: [build-linux, build-windows]
+    needs: [build-linux, build-windows, build-macos]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
 
@@ -135,6 +176,12 @@ jobs:
           name: windows-build
           path: artifacts
 
+      - name: Download macOS artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: macos-build
+          path: artifacts
+
       - name: Get previous tag
         id: previoustag
         run: |
@@ -153,6 +200,7 @@ jobs:
           files: |
             artifacts/iPod-Wrapped-x86_64.AppImage
             artifacts/ipod-wrapped-windows.zip
+            artifacts/iPod-Wrapped-macOS.dmg
           draft: true
           prerelease: false
           generate_release_notes: true

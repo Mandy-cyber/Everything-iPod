@@ -22,6 +22,8 @@ build/
 dist/
 *.spec
 *.AppImage
+*.dmg
+*.app
 AppDir/
 appimagetool-*.AppImage
 !installers/**/*.spec

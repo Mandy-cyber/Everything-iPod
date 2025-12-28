@@ -13,12 +13,17 @@ SONG_EXTENSIONS = ['.mp3', '.flac', '.ogg', '.wav', '.m4a', '.aac', '.alac', '.a
 APPIMAGE = os.environ.get("APPIMAGE")
 
 if APPIMAGE:
-    # (appimage) paths - use home directory
+    # (linux appimage) paths - use home directory
     HOME_DIR = pathlib.Path.home() / ".iPodWrapped"
     STORAGE_DIR = HOME_DIR / "storage"
     FRONTEND_DIR = HOME_DIR / "frontend"
+elif hasattr(sys, '_MEIPASS') and sys.platform == 'darwin':
+    # (macos .app) paths - use application support
+    APP_SUPPORT = pathlib.Path.home() / "Library" / "Application Support" / "iPod Wrapped"
+    STORAGE_DIR = APP_SUPPORT / "storage"
+    FRONTEND_DIR = pathlib.Path(sys._MEIPASS) / "frontend"
 elif hasattr(sys, '_MEIPASS'):
-    # (pyinstaller bundle) paths - use directory containing exe
+    # (windows exe) paths - use directory containing exe
     BASE_DIR = pathlib.Path(sys.executable).parent
     STORAGE_DIR = BASE_DIR / "storage"
     FRONTEND_DIR = BASE_DIR / "frontend"

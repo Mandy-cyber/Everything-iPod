@@ -1,0 +1,55 @@
+name: Build macOS App
+
+# Only run on the macos-installer branch when you push
+on:
+  push:
+    branches:
+      - mac-installer
+  workflow_dispatch:  # Allows manual triggering from GitHub UI
+
+jobs:
+  build-macos:
+    runs-on: macos-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install Homebrew dependencies
+      run: |
+        brew install gtk4 libadwaita gtksourceview5 pygobject3
+
+    - name: Create virtual environment
+      run: |
+        python3 -m venv build-venv
+        source build-venv/bin/activate
+
+        # Install Python dependencies
+        pip install pandas mutagen requests python-dotenv typer pymongo psutil pillow keyring pyinstaller
+
+        # Verify PyInstaller
+        pyinstaller --version
+
+    - name: Build macOS app
+      run: |
+        source build-venv/bin/activate
+        cd installers/macos
+        bash build_macos.sh
+
+    - name: Upload build artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ipod-wrapped-macos
+        path: installers/macos/dist/iPod Wrapped.app
+        retention-days: 30
+
+    - name: Display build info
+      run: |
+        echo "Build completed successfully!"
+        echo "Download the artifact from the Actions tab"
+        ls -lh "installers/macos/dist/iPod Wrapped.app"
