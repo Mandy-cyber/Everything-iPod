@@ -30,7 +30,14 @@ Blah blah blah
 **Updating:** Download new AppImage and replace the old file. Your data in `~/.iPodWrapped/` is preserved.
 
 ### macOS
-Coming soon!
+macOS installer not yet available. To run on macOS:
+1. Clone the repository: `git clone https://github.com/Mandy-cyber/Everything-iPod.git`
+2. Install dependencies (requires Homebrew):
+   ```bash
+   brew install gtk4 libadwaita gtksourceview5 pygobject3
+   pip install -r requirements.txt
+   ```
+3. Run: `python -m ipod_wrapped`
 
 ---
 
