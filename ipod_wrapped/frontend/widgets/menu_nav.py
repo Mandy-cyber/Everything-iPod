@@ -127,7 +127,7 @@ def _open_about_dialog(window: Gtk.ApplicationWindow, revealer: Gtk.Revealer) ->
     about_dialog.set_application_name("iPod Wrapped")
     about_dialog.set_developer_name("Mandy-cyber")
     about_dialog.set_issue_url("https://github.com/Mandy-cyber/Everything-iPod/issues")
-    about_dialog.set_version("1.0.0")
+    about_dialog.set_version("1.0.1")
     about_dialog.set_comments("An all-in-one tool to view your iPod library, listening history, and 'iPod Wrapped' statistics")
     about_dialog.set_website("https://github.com/Mandy-cyber/Everything-iPod")
     about_dialog.set_license_type(Gtk.License.GPL_3_0)
