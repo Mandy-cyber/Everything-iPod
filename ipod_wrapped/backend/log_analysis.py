@@ -229,13 +229,63 @@ class LogAnalyser:
         if music_idx >= 0:
             adjusted_sections = path_sections[music_idx + 1:]
 
-            # need at least Artist/Album/Track
-            if len(adjusted_sections) < 3:
+            # supported folder structures
+            # - /Music/Artist/Album/Track.ext
+            # - /Music/Artist - Album/Track.ext
+            # - /Music/Track.ext
+            if len(adjusted_sections) < 1:
                 raise ValueError(f"Not enough sections after Music: {path}")
 
-            artist = adjusted_sections[0].strip()
-            album = self.fix_explicit_label(adjusted_sections[1].strip())
-            track_filename = adjusted_sections[2]
+            if len(adjusted_sections) == 1:
+                # files directly in /Music/
+                track_filename = adjusted_sections[0]
+                # extract metadata from filename
+                if ' - ' in track_filename:
+                    parts = track_filename.split(' - ')
+                    if len(parts) >= 3:
+                        # "Artist - Album - Song.ext" format
+                        artist = parts[0].strip()
+                        album = self.fix_explicit_label(parts[1].strip())
+                    elif len(parts) == 2:
+                        # "Artist - Song.ext" format
+                        artist = parts[0].strip()
+                        album = "Unknown Album"
+                    else:
+                        artist = "Unknown Artist"
+                        album = "Unknown Album"
+                else:
+                    artist = "Unknown Artist"
+                    album = "Unknown Album"
+            elif len(adjusted_sections) == 2:
+                # files in /Music/Artist - Album/ or /Music/Various Artists/Album/
+                folder_name = adjusted_sections[0].strip()
+                track_filename = adjusted_sections[1]
+
+                # edge cases: folders like "Various Artists" or "Soundtracks" (from google lol)
+                # cannot guarantee the below at all :sob:
+                if folder_name in ["Various Artists", "Soundtracks", "Compilations"]:
+                    artist_from_file = None
+                    if ' - ' in track_filename:
+                        parts = track_filename.split(' - ', 1)
+                        if len(parts) >= 2:
+                            artist_from_file = parts[0].strip()
+
+                    artist = artist_from_file if artist_from_file else folder_name
+                    album = folder_name
+                # try to split by ' - ' to separate artist and album
+                elif ' - ' in folder_name:
+                    parts = folder_name.split(' - ', 1)
+                    artist = parts[0].strip()
+                    album = self.fix_explicit_label(parts[1].strip())
+                else:
+                    # no separator, use folder as both artist and album
+                    artist = folder_name
+                    album = folder_name
+            else:
+                # standard /Music/Artist/Album/Track.ext structure
+                artist = adjusted_sections[0].strip()
+                album = self.fix_explicit_label(adjusted_sections[1].strip())
+                track_filename = adjusted_sections[2]
 
             # check track extension
             if not self.is_valid_track_filename(track_filename):
@@ -248,7 +298,7 @@ class LogAnalyser:
             song = self.extract_song_from_filename(track_filename)
 
             # ensure song title is valid
-            if not song or song.lower() in ['flac', 'mp3', 'ogg', 'wav', 'm4a']:
+            if not song or song.lower() in SONG_EXTENSIONS:
                 raise ValueError(f"Invalid song title: {song}")
 
             return album, artist, song
@@ -366,7 +416,11 @@ class LogAnalyser:
                     })
                 except Exception as e:
                     failed.append(log_entry)
-                    print(log_entry, e)
+                    # handle encoding errors on Windows (charmap codec)
+                    try:
+                        print(log_entry, e)
+                    except UnicodeEncodeError:
+                        print(log_entry.encode('ascii', 'replace').decode('ascii'), e)
 
         df = pd.DataFrame(entries)
         if len(failed) > 0:
@@ -802,11 +856,49 @@ class LogAnalyser:
         
         
         try:
-            # copy log to local storage
-            shutil.copy2(log_location, STORAGE_DIR)
+            # merge iPod playback.log with local storage copy
+            local_log_path = os.path.join(STORAGE_DIR, 'playback.log')
+
+            # read existing local log entries (if exists)
+            existing_entries = set()
+            if os.path.exists(local_log_path):
+                with open(local_log_path, 'r', encoding='utf-8', errors='replace') as f:
+                    for line in f:
+                        if not line.startswith('#'):
+                            existing_entries.add(line.strip())
+
+            # read iPod log and collect new entries
+            new_entries = []
+            new_headers = []
+            with open(log_location, 'r', encoding='utf-8', errors='replace') as f:
+                for line in f:
+                    line = line.strip()
+                    if line.startswith('#'):
+                        # collect header comments from iPod log
+                        new_headers.append(line)
+                    elif line and line not in existing_entries:
+                        new_entries.append(line)
+
+            # append new entries to local log
+            if new_entries:
+                with open(local_log_path, 'a', encoding='utf-8') as f:
+                    # write headers if any
+                    for header in new_headers:
+                        f.write(header + '\n')
+                    # write new play entries
+                    for entry in new_entries:
+                        f.write(entry + '\n')
+                print(f"Appended {len(new_entries)} new plays to local playback.log")
+            else:
+                # if no local log exists yet, just copy the iPod log
+                if not os.path.exists(local_log_path):
+                    shutil.copy2(log_location, STORAGE_DIR)
+                    print("Created initial local playback.log from iPod")
+                else:
+                    print("No new plays to append to local playback.log")
 
             # read and analyse logs
-            self.log_data = self.load_logs(log_location)
+            self.log_data = self.load_logs(local_log_path)
             self.log_df = self.logs_to_df()
             print(f"Loaded {len(self.log_df)} log entries")
 
@@ -831,7 +923,11 @@ class LogAnalyser:
             # run stats
             self.stats = self.calc_all_stats()
         except Exception as e:
-            print(f"ERROR: {e}")
+            # handle encoding errors on Windows (charmap codec)
+            try:
+                print(f"ERROR: {e}")
+            except UnicodeEncodeError:
+                print(f"ERROR: {str(e).encode('ascii', 'replace').decode('ascii')}")
             return {"error": "Something went wrong. Please try again later"}
 
         # cleanup
