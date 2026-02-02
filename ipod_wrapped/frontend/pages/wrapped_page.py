@@ -2,6 +2,7 @@ import gi
 gi.require_version('Gtk', '4.0')
 from gi.repository import Gtk
 
+from backend.constants import DEFAULT_SCALE_TIER
 from ..widgets.stats_filters import StatsFilters
 
 
@@ -16,6 +17,7 @@ class WrappedPage(Gtk.ScrolledWindow):
         self.db_type = db_type
         self.db_path = db_path
         self.album_art_dir = album_art_dir
+        self.tier = DEFAULT_SCALE_TIER
         self.stats_filter = StatsFilters()
 
         self.add_css_class('page-area')
@@ -56,6 +58,10 @@ class WrappedPage(Gtk.ScrolledWindow):
         self.set_child(paned)
         
         
+    def rescale(self, tier: str) -> None:
+        """Store the current tier for when stats visuals are generated"""
+        self.tier = tier
+
     def refresh(self) -> None:
         """Refresh the page by reloading data from database"""
         pass

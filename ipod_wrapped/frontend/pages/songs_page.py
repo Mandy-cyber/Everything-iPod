@@ -3,6 +3,7 @@ gi.require_version('Gtk', '4.0')
 from gi.repository import Gtk, GLib, Gio
 
 from backend import has_data, grab_all_songs, ms_to_mmss
+from backend.constants import DEFAULT_SONG_INFO_IMAGE_SIZE, SONG_INFO_IMAGE_SIZES
 from ..widgets.songs_table import create_song_store, create_song_selection_model, create_songs_table, Song
 from ..widgets.song_info import display_song_info
 
@@ -20,6 +21,7 @@ class SongsPage(Gtk.Box):
         self.db_path = db_path
         self.album_art_dir = album_art_dir
         self.selected_song_index = None
+        self.song_image_size = DEFAULT_SONG_INFO_IMAGE_SIZE
 
         self.add_css_class('page-area')
         self.add_css_class('songs-page')
@@ -126,7 +128,7 @@ class SongsPage(Gtk.Box):
                 child = self.song_info_box.get_first_child()
 
             # rebuild
-            song_info_widget = display_song_info(song_data)
+            song_info_widget = display_song_info(song_data, image_size=self.song_image_size)
             self.song_info_box.append(song_info_widget)
             self.song_info_box.set_visible(True)
 
@@ -139,6 +141,13 @@ class SongsPage(Gtk.Box):
         vadj = self.scrolled_window.get_vadjustment()
         if vadj:
             vadj.set_value(0)
+
+    def rescale(self, tier: str) -> None:
+        """Rescale image sizes for the given tier"""
+        self.song_image_size = SONG_INFO_IMAGE_SIZES.get(tier, DEFAULT_SONG_INFO_IMAGE_SIZE)
+        # re-render current song info display if visible
+        if self.song_info_box.get_visible():
+            self._update_song_display()
 
     def refresh(self) -> None:
         """Refresh the page by reloading songs from database"""

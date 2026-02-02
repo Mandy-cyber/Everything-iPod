@@ -4,6 +4,7 @@ gi.require_version('Adw', '1')
 from gi.repository import Gtk, GLib, Adw
 
 from backend import grab_all_metadata, has_data
+from backend.constants import DEFAULT_ALBUM_IMAGE_SIZE, ALBUM_IMAGE_SIZES
 from ..widgets.album_button import create_album_button
 
 
@@ -14,7 +15,7 @@ class AlbumsPage(Gtk.Box):
         super().__init__(orientation=Gtk.Orientation.VERTICAL)
 
         # setup
-        self.IMAGE_SIZE = 120
+        self.IMAGE_SIZE = DEFAULT_ALBUM_IMAGE_SIZE
         self.toggle_bottom_bar = toggle_bottom_bar_callback
         self.db_type = db_type
         self.db_path = db_path
@@ -76,6 +77,26 @@ class AlbumsPage(Gtk.Box):
             for album in albums:
                 button = create_album_button(self.db_type, self.db_path, self.album_art_dir, album, self.nav_view, self.IMAGE_SIZE)
                 self.flowbox.append(button)
+
+    def rescale(self, tier: str) -> None:
+        """Rescale album art sizes for the given tier"""
+        self.IMAGE_SIZE = ALBUM_IMAGE_SIZES.get(tier, DEFAULT_ALBUM_IMAGE_SIZE)
+        btn_size = self.IMAGE_SIZE + 5
+
+        child = self.flowbox.get_first_child()
+        while child:
+            # FlowBoxChild wraps the actual button
+            button = child.get_child() if hasattr(child, 'get_child') else child
+            button.set_size_request(btn_size, btn_size)
+
+            # resize the picture inside the button's box
+            box = button.get_child()
+            if box:
+                pic = box.get_first_child()
+                if pic:
+                    pic.set_size_request(self.IMAGE_SIZE, self.IMAGE_SIZE)
+
+            child = child.get_next_sibling()
 
     def refresh(self) -> None:
         """Refresh the page by reloading albums from database"""

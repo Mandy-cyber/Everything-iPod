@@ -7,7 +7,15 @@ from datetime import datetime
 import gi
 gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
-from gi.repository import Gtk, Gdk, Adw
+from gi.repository import Gtk, Gdk, Gio, GLib, Adw
+
+# responsive scaling tiers
+SCALE_TIERS = [
+    ('scale-compact', 0, 750),
+    ('scale-medium', 750, 1100),
+    ('scale-large', 1100, float('inf')),
+]
+BASE_WIDTH = 650
 
 from .pages import AlbumsPage, SongsPage, WrappedPage, GenresPage
 from .widgets.bottom_bar import create_bottom_bar
@@ -121,8 +129,43 @@ class MainWindow(Adw.ApplicationWindow):
         # place banners (flush with bottom of window)
         main_box.append(self.error_banner)
         main_box.append(self.success_banner)
-            
-    
+
+        # responsive scaling
+        self.current_tier = None
+        self.connect('notify::default-width', self._on_resize)
+        # apply initial tier after window is realized
+        GLib.idle_add(self._on_resize, self, None)
+
+    def _get_tier(self, width: int) -> str:
+        """Get the scale tier name for the given width"""
+        for name, min_w, max_w in SCALE_TIERS:
+            if min_w <= width < max_w:
+                return name
+        return 'scale-compact'
+
+    def _on_resize(self, widget=None, pspec=None) -> bool:
+        """Handle window resize by swapping scale tier CSS class"""
+        width = self.get_width()
+        if width <= 0:
+            return False
+
+        tier = self._get_tier(width)
+        if tier == self.current_tier:
+            return False
+
+        # swap CSS class on the window
+        if self.current_tier:
+            self.remove_css_class(self.current_tier)
+        self.add_css_class(tier)
+        self.current_tier = tier
+
+        # rescale page images
+        for page in (self.genres_page, self.albums_page, self.songs_page, self.wrapped_page):
+            if hasattr(page, 'rescale'):
+                page.rescale(tier)
+
+        return False
+
     def refresh_all_pages(self) -> None:
         """Refresh all pages after data has been updated"""
         # refresh genres page
@@ -162,7 +205,10 @@ class MainWindow(Adw.ApplicationWindow):
 class iPodWrappedApp(Adw.Application):
     """GTK Application wrapper"""
     def __init__(self):
-        super().__init__(application_id="com.mandycyber.iPodWrapped")
+        super().__init__(
+            application_id="com.mandycyber.iPodWrapped",
+            flags=Gio.ApplicationFlags.NON_UNIQUE
+        )
 
     def do_activate(self):
         # force dark mode

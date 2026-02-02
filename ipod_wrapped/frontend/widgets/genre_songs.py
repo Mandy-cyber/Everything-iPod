@@ -4,13 +4,23 @@ import random
 gi.require_version('Gtk', '4.0')
 from gi.repository import Gtk
 
-def display_genre_songs(genre_info: dict, content_box: Gtk.Box, play_song_callback: Optional[Callable] = None) -> Gtk.Box:
+from backend.constants import DEFAULT_GENRE_HEADER_IMAGE_SIZE, DEFAULT_GENRE_SONG_IMAGE_SIZE
+
+def display_genre_songs(
+    genre_info: dict,
+    content_box: Gtk.Box,
+    play_song_callback: Optional[Callable] = None,
+    header_image_size: int = DEFAULT_GENRE_HEADER_IMAGE_SIZE,
+    song_image_size: int = DEFAULT_GENRE_SONG_IMAGE_SIZE,
+) -> Gtk.Box:
     """Displays the genre's songs and basic stats
 
     Args:
         genre_info (dict): The genre to display info/songs for
         content_box (Gtk.Box): The box where the display will go
         play_song_callback: Optional callback function(song_path, metadata) to play songs
+        header_image_size (int): Pixel size for the genre header image
+        song_image_size (int): Pixel size for song listing thumbnails
 
     Returns:
         Gtk.Box: The box updated with the display
@@ -39,7 +49,7 @@ def display_genre_songs(genre_info: dict, content_box: Gtk.Box, play_song_callba
     # left side: cover image
     image = Gtk.Image()
     image.set_from_file(genre_art)
-    image.set_pixel_size(70)
+    image.set_pixel_size(header_image_size)
     image.add_css_class('genre-image')
     header_box.append(image)
 
@@ -115,23 +125,27 @@ def display_genre_songs(genre_info: dict, content_box: Gtk.Box, play_song_callba
 
     # load in songs
     for song_info in songs:
-        listing = create_song_listing(song_info, play_song_callback)
+        listing = create_song_listing(song_info, play_song_callback, song_image_size)
         songs_box.append(listing)
 
     return content_box
 
-def create_song_listing(song_info: dict, play_song_callback: Optional[Callable] = None) -> Gtk.Box:
+def create_song_listing(
+    song_info: dict,
+    play_song_callback: Optional[Callable] = None,
+    image_size: int = DEFAULT_GENRE_SONG_IMAGE_SIZE,
+) -> Gtk.Box:
     song, artist, art_path = song_info.values()
-    
+
     # listing box
     box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=4)
     box.set_halign(Gtk.Align.START)
     box.add_css_class('genre-song-row')
-    
+
     # album art
     image = Gtk.Image()
     image.set_from_file(art_path)
-    image.set_pixel_size(30)
+    image.set_pixel_size(image_size)
     image.add_css_class('genre-song-art')
     box.append(image)
     

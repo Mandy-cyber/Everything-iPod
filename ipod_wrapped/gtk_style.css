@@ -507,3 +507,67 @@ headerbar viewswitcher label {
     font-weight: 400;
     color: #3a3a3e;
 }
+
+/* ===== RESPONSIVE SCALING: MEDIUM TIER (750-1100px) ===== */
+.scale-medium .album-name-label { font-size: 13px; }
+.scale-medium .album-artist-label { font-size: 12px; }
+.scale-medium .genre-title-label { font-size: 21px; }
+.scale-medium .genre-song-text { font-size: 12px; }
+.scale-medium .genre-stats-label { font-size: 13px; }
+.scale-medium .song-page-title-label { font-size: 26px; }
+.scale-medium .song-page-album-label { font-size: 18px; }
+.scale-medium .song-page-artist-label { font-size: 13px; }
+.scale-medium .song-page-stats-label { font-size: 13px; }
+.scale-medium .song-page-genres-label { font-size: 13px; }
+.scale-medium headerbar viewswitcher button { font-size: 10px; min-height: 23px; min-width: 52px; }
+.scale-medium .start-wrapped-title,
+.scale-medium .settings-title { font-size: 23px; }
+.scale-medium .start-wrapped-subtitle,
+.scale-medium .settings-subtitle { font-size: 18px; }
+.scale-medium .start-wrapped-explainer,
+.scale-medium .settings-explainer { font-size: 14px; }
+.scale-medium .settings-status { font-size: 18px; }
+.scale-medium .stats-filter-label { font-size: 14px; }
+.scale-medium .stats-filter-box-title { font-size: 23px; }
+.scale-medium .stats-bullet { font-size: 18px; }
+.scale-medium .stats-indiv-stat-box label { font-size: 16px; }
+.scale-medium .stats-visual-page-title { font-size: 21px; }
+.scale-medium .summary-column-title { font-size: 18px; }
+.scale-medium .summary-list-item { font-size: 14px; }
+.scale-medium .summary-mins-label { font-size: 14px; }
+.scale-medium .summary-mins-value { font-size: 34px; }
+.scale-medium .top-x-item-num { font-size: 26px; }
+.scale-medium .top-x-item-value { font-size: 16px; }
+.scale-medium .top-x-item-artist { font-size: 13px; }
+
+/* ===== RESPONSIVE SCALING: LARGE TIER (1100px+) ===== */
+.scale-large .album-name-label { font-size: 16px; }
+.scale-large .album-artist-label { font-size: 14px; }
+.scale-large .genre-title-label { font-size: 26px; }
+.scale-large .genre-song-text { font-size: 14px; }
+.scale-large .genre-stats-label { font-size: 16px; }
+.scale-large .song-page-title-label { font-size: 32px; }
+.scale-large .song-page-album-label { font-size: 22px; }
+.scale-large .song-page-artist-label { font-size: 16px; }
+.scale-large .song-page-stats-label { font-size: 16px; }
+.scale-large .song-page-genres-label { font-size: 16px; }
+.scale-large headerbar viewswitcher button { font-size: 13px; min-height: 29px; min-width: 64px; }
+.scale-large .start-wrapped-title,
+.scale-large .settings-title { font-size: 29px; }
+.scale-large .start-wrapped-subtitle,
+.scale-large .settings-subtitle { font-size: 22px; }
+.scale-large .start-wrapped-explainer,
+.scale-large .settings-explainer { font-size: 18px; }
+.scale-large .settings-status { font-size: 22px; }
+.scale-large .stats-filter-label { font-size: 18px; }
+.scale-large .stats-filter-box-title { font-size: 29px; }
+.scale-large .stats-bullet { font-size: 22px; }
+.scale-large .stats-indiv-stat-box label { font-size: 19px; }
+.scale-large .stats-visual-page-title { font-size: 26px; }
+.scale-large .summary-column-title { font-size: 22px; }
+.scale-large .summary-list-item { font-size: 18px; }
+.scale-large .summary-mins-label { font-size: 18px; }
+.scale-large .summary-mins-value { font-size: 42px; }
+.scale-large .top-x-item-num { font-size: 32px; }
+.scale-large .top-x-item-value { font-size: 19px; }
+.scale-large .top-x-item-artist { font-size: 16px; }
