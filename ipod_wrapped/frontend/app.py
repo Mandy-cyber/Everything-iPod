@@ -7,7 +7,7 @@ from datetime import datetime
 import gi
 gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
-from gi.repository import Gtk, Gdk, Adw
+from gi.repository import Gtk, Gdk, Gio, Adw
 
 from .pages import AlbumsPage, SongsPage, WrappedPage, GenresPage
 from .widgets.bottom_bar import create_bottom_bar
@@ -162,7 +162,10 @@ class MainWindow(Adw.ApplicationWindow):
 class iPodWrappedApp(Adw.Application):
     """GTK Application wrapper"""
     def __init__(self):
-        super().__init__(application_id="com.mandycyber.iPodWrapped")
+        super().__init__(
+            application_id="com.mandycyber.iPodWrapped",
+            flags=Gio.ApplicationFlags.NON_UNIQUE
+        )
 
     def do_activate(self):
         # force dark mode
