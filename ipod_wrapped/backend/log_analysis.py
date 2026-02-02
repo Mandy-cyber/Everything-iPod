@@ -221,7 +221,7 @@ class LogAnalyser:
         # find the "Music" directory index
         music_idx = -1
         for i in range(len(path_sections) - 1, -1, -1):
-            if path_sections[i] == 'Music':
+            if path_sections[i].lower() == 'music':
                 music_idx = i
                 break
 
@@ -263,7 +263,7 @@ class LogAnalyser:
 
                 # edge cases: folders like "Various Artists" or "Soundtracks" (from google lol)
                 # cannot guarantee the below at all :sob:
-                if folder_name in ["Various Artists", "Soundtracks", "Compilations"]:
+                if folder_name.lower() in ["various artists", "soundtracks", "compilations"]:
                     artist_from_file = None
                     if ' - ' in track_filename:
                         parts = track_filename.split(' - ', 1)

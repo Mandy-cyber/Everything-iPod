@@ -31,8 +31,10 @@ def extract_song_path(full_path: str) -> str:
     Returns:
         str: Path starting from /Music/. Empty string otherwise.
     """
-    if "/Music/" in full_path:
-        return "/Music/" + full_path.split("/Music/", 1)[1]
+    lower = full_path.lower()
+    if "/music/" in lower:
+        idx = lower.index("/music/")
+        return "/Music/" + full_path[idx + len("/music/"):]
     return ""
 
 
@@ -59,11 +61,13 @@ def extract_metadata_from_path(file_path: str) -> Optional[dict]:
         Optional[dict]: dict with song, artist, album, or None if invalid
     """
     try:
-        # check if it's in the Music directory
-        if "/Music/" not in file_path:
+        # check if it's in the Music directory (case-insensitive)
+        lower_path = file_path.lower()
+        if "/music/" not in lower_path:
             return None
 
-        path_sections = file_path.split('/Music/', 1)[1].split('/')
+        idx = lower_path.index("/music/")
+        path_sections = file_path[idx + len("/music/"):].split('/')
 
         # need Artist, Album, & Track 
         if len(path_sections) < 3:
