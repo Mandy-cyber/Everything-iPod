@@ -9,9 +9,16 @@ gi.require_version("GtkSource", "5")
 gi.require_version('Pango', '1.0')
 from gi.repository import Gtk, GtkSource, Adw, Pango
 
-from backend import find_top_genres, find_top_artists, find_top_albums, find_top_songs, load_stats_from_db, get_total_listening_time 
+from backend import find_top_genres, find_top_artists, find_top_albums, find_top_songs, load_stats_from_db, get_total_listening_time
+from backend.constants import (
+    DEFAULT_SCALE_TIER,
+    DEFAULT_VISUAL_LIST_ART_SIZE, DEFAULT_VISUAL_LIST_ROW_HEIGHT,
+    DEFAULT_VISUAL_LIST_NUM_WIDTH, DEFAULT_VISUAL_SUMMARY_ART_SIZE,
+    VISUAL_LIST_ART_SIZES, VISUAL_LIST_ROW_HEIGHTS,
+    VISUAL_LIST_NUM_WIDTHS, VISUAL_SUMMARY_ART_SIZES,
+)
 
-# TODO: 
+# TODO:
 # - add clear button to date range
 # - change title entry to on-changed vs on-activated
 
@@ -34,6 +41,7 @@ class StatsFilters:
             'max_genres': self.DEFAULT_MAX,
         }
         self.stat_filter_box = None
+        self.tier = DEFAULT_SCALE_TIER
         
     def _create_metadata_filter_box(self) -> Gtk.Box:
         """Creates the 'Mode', 'Date Range', and 'Title' filter boxes.
@@ -258,6 +266,11 @@ class StatsFilters:
     
     def _create_visual_mode_list_page(self, category: str, data: list) -> Gtk.Box:
         """Creates a Spotify Wrapped-esque view of the given data"""
+        # tier-based sizes
+        art_size = VISUAL_LIST_ART_SIZES.get(self.tier, DEFAULT_VISUAL_LIST_ART_SIZE)
+        row_height = VISUAL_LIST_ROW_HEIGHTS.get(self.tier, DEFAULT_VISUAL_LIST_ROW_HEIGHT)
+        num_width = VISUAL_LIST_NUM_WIDTHS.get(self.tier, DEFAULT_VISUAL_LIST_NUM_WIDTH)
+
         # setup page
         page = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
         page.set_halign(Gtk.Align.FILL)
@@ -280,14 +293,14 @@ class StatsFilters:
 
             # item box
             item_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
-            item_box.set_size_request(-1, 50)
+            item_box.set_size_request(-1, row_height)
             item_box.set_halign(Gtk.Align.CENTER)
             item_box.set_valign(Gtk.Align.CENTER)
             item_box.add_css_class('top-x-item-box')
 
             # left: item number
             item_num = Gtk.Label(label=str(idx))
-            item_num.set_size_request(30, -1)
+            item_num.set_size_request(num_width, -1)
             item_num.set_halign(Gtk.Align.CENTER)
             item_num.set_valign(Gtk.Align.CENTER)
             item_num.add_css_class('top-x-item-num')
@@ -295,7 +308,7 @@ class StatsFilters:
 
             # middle: album cover
             art_container = Gtk.Box()
-            art_container.set_size_request(40, 40)
+            art_container.set_size_request(art_size, art_size)
             art_container.set_halign(Gtk.Align.CENTER)
             art_container.set_valign(Gtk.Align.CENTER)
 
@@ -336,6 +349,9 @@ class StatsFilters:
           
     def _create_visual_mode_summary_page(self, data: dict) -> Gtk.Box:
         """Creates a Spotify Wrapped-esque summary page"""
+        # tier-based sizes
+        summary_art = VISUAL_SUMMARY_ART_SIZES.get(self.tier, DEFAULT_VISUAL_SUMMARY_ART_SIZE)
+
         # setup
         page = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
         page.set_halign(Gtk.Align.CENTER)
@@ -349,7 +365,7 @@ class StatsFilters:
 
             if cover_art and os.path.exists(cover_art):
                 album_art_img = Gtk.Picture.new_for_filename(cover_art)
-                album_art_img.set_size_request(100, 100)
+                album_art_img.set_size_request(summary_art, summary_art)
                 album_art_img.set_content_fit(Gtk.ContentFit.COVER)
                 album_art_img.set_halign(Gtk.Align.CENTER)
                 album_art_img.set_valign(Gtk.Align.CENTER)
@@ -358,7 +374,7 @@ class StatsFilters:
                 page.append(album_art_img)
             else:
                 art_container = Gtk.Box()
-                art_container.set_size_request(100, 100)
+                art_container.set_size_request(summary_art, summary_art)
                 art_container.set_halign(Gtk.Align.CENTER)
                 art_container.set_valign(Gtk.Align.CENTER)
                 art_container.set_margin_bottom(20)

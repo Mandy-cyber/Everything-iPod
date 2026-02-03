@@ -75,7 +75,7 @@ class AlbumsPage(Gtk.Box):
             self.albums = albums
             # populate with album buttons
             for album in albums:
-                button = create_album_button(self.db_type, self.db_path, self.album_art_dir, album, self.nav_view, self.IMAGE_SIZE)
+                button = create_album_button(self.db_type, self.db_path, self.album_art_dir, album, self.nav_view, self.IMAGE_SIZE, lambda: self.IMAGE_SIZE)
                 self.flowbox.append(button)
 
     def rescale(self, tier: str) -> None:

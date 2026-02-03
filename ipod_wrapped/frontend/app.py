@@ -132,9 +132,7 @@ class MainWindow(Adw.ApplicationWindow):
 
         # responsive scaling
         self.current_tier = None
-        self.connect('notify::default-width', self._on_resize)
-        # apply initial tier after window is realized
-        GLib.idle_add(self._on_resize, self, None)
+        self._pending_tier_update = False
 
     def _get_tier(self, width: int) -> str:
         """Get the scale tier name for the given width"""
@@ -143,20 +141,22 @@ class MainWindow(Adw.ApplicationWindow):
                 return name
         return 'scale-compact'
 
-    def _on_resize(self, widget=None, pspec=None) -> bool:
-        """Handle window resize by swapping scale tier CSS class"""
-        width = self.get_width()
-        if width <= 0:
-            return False
-
+    def do_size_allocate(self, width, height, baseline):
+        Adw.ApplicationWindow.do_size_allocate(self, width, height, baseline)
         tier = self._get_tier(width)
-        if tier == self.current_tier:
-            return False
+        if tier != self.current_tier and not self._pending_tier_update:
+            self._pending_tier_update = True
+            GLib.idle_add(self._apply_tier, tier)
+
+    def _apply_tier(self, tier) -> bool:
+        """Handle window resize by swapping scale tier CSS class"""
+        self._pending_tier_update = False
 
         # swap CSS class on the window
-        if self.current_tier:
-            self.remove_css_class(self.current_tier)
-        self.add_css_class(tier)
+        for widget in (self, self.stack):
+            if self.current_tier:
+                widget.remove_css_class(self.current_tier)
+            widget.add_css_class(tier)
         self.current_tier = tier
 
         # rescale page images

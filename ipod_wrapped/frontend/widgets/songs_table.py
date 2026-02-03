@@ -53,6 +53,7 @@ def _setup_title_column(factory: Gtk.SignalListItemFactory, list_item: Gtk.ListI
     play_icon = Gtk.Label()
     box.append(play_icon)
     title_label = Gtk.Label(xalign=0)
+    title_label.add_css_class('songs-table-cell')
     box.append(title_label)
 
     list_item.set_child(box)
@@ -75,6 +76,7 @@ def _bind_title_column(factory: Gtk.SignalListItemFactory, list_item: Gtk.ListIt
 def _setup_artist_column(factory: Gtk.SignalListItemFactory, list_item: Gtk.ListItem) -> None:
     """ Setup callback for artist column."""
     artist_label = Gtk.Label(xalign=0)
+    artist_label.add_css_class('songs-table-cell')
     list_item.set_child(artist_label)
 
 def _bind_artist_column(factory: Gtk.SignalListItemFactory, list_item: Gtk.ListItem) -> None:
@@ -87,6 +89,7 @@ def _bind_artist_column(factory: Gtk.SignalListItemFactory, list_item: Gtk.ListI
 def _setup_album_column(factory: Gtk.SignalListItemFactory, list_item: Gtk.ListItem) -> None:
     """Setup callback for album column."""
     album_label = Gtk.Label(xalign=0)
+    album_label.add_css_class('songs-table-cell')
     list_item.set_child(album_label)
 
 def _bind_album_column(factory: Gtk.SignalListItemFactory, list_item: Gtk.ListItem) -> None:
@@ -99,6 +102,7 @@ def _bind_album_column(factory: Gtk.SignalListItemFactory, list_item: Gtk.ListIt
 def _setup_duration_column(factory: Gtk.SignalListItemFactory, list_item: Gtk.ListItem) -> None:
     """ Setup callback for duration column."""
     duration_label = Gtk.Label(xalign=1)
+    duration_label.add_css_class('songs-table-cell')
     list_item.set_child(duration_label)
 
 def _bind_duration_column(factory: Gtk.SignalListItemFactory, list_item: Gtk.ListItem) -> None:

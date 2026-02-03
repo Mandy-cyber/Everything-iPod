@@ -61,6 +61,7 @@ class WrappedPage(Gtk.ScrolledWindow):
     def rescale(self, tier: str) -> None:
         """Store the current tier for when stats visuals are generated"""
         self.tier = tier
+        self.stats_filter.tier = tier
 
     def refresh(self) -> None:
         """Refresh the page by reloading data from database"""
