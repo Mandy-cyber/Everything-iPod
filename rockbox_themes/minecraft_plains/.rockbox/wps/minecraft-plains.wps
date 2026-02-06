@@ -1,0 +1,122 @@
+# Minecraft (Plains Biome Edition) - While Playing Screen
+# Version: 1.0 (Feb 6, 2026)
+# License: CC-BY-SA
+# Author: https://github.com/Mandy-cyber
+# Platform: iPod Classic/Video (320x240)
+
+# Background Image
+%X(wps.bmp)
+
+#-----------------------------------------
+# PRELOADING & SETUP
+#-----------------------------------------
+# Preload Cover Art
+%Cl(0,0,65,65)
+
+# Preload Images
+%xl(A,pause.bmp)
+%xl(B,stop.bmp)
+%xl(C,shuffle.bmp)
+%xl(D,repeat.bmp)
+%xl(E,progress_bar_empty.bmp)
+%xl(F,progress_bar_filled.bmp)
+%xl(L,lock_screen.bmp)
+%xl(P,small_player_skin.bmp)
+
+# Font Definitions
+%Fl(2,14-OpenSans-SemiBold.fnt)
+%Fl(3,16-PixelifySans-Regular.fnt)
+%Fl(4,12-PixelifySans-Regular.fnt)
+
+# Status Bar Off
+%wd
+
+#-----------------------------------------
+# TOP BAR
+#-----------------------------------------
+# Volume Text
+%V(20,5,40,30,2)
+%al%pvdB
+
+# Clock
+%V(145,5,35,30,2)
+%ac%cH:%cM
+
+# Battery
+%V(270,5,35,30,2)
+%ar%bl%%
+
+#-----------------------------------------
+# TRACK & NEXT TRACK INFO
+#-----------------------------------------
+# Current Track
+%V(58,140,134,50,3)
+%al%s%?it<%it|Unknown>
+%al%s%?id<%id|Unknown>
+%al%s%?ia<%ia|Unknown>
+
+# Track Position
+%V(144,51,80,20,3)
+%Vf(C6C6C6)
+%ac%s%pp
+
+%V(167,75,80,20,3)
+%Vf(C6C6C6)
+%ac%s%pe
+
+# Next Track
+%V(58,193,134,30,4)
+%Vf(C6C6C6)
+%al%sNext Track: %?It<%It|...> - %?Ia<%Ia|...>
+
+#-----------------------------------------
+# ALBUM ART DISPLAY
+#-----------------------------------------
+%V(200,140,65,65,1)
+%Cd
+
+#-----------------------------------------
+# PLAYER SKIN DISPLAY
+#-----------------------------------------
+%V(87,39,48,90,-)
+%xd(P)
+
+#-----------------------------------------
+# ACTION ICONS
+#-----------------------------------------
+# Repeat
+%V(56,62,18,18,-)
+%?mm<|%xd(D)|%xd(D)||>
+
+# B=Stop | Don't display play icon | A=Pause
+%V(56,86,18,18,-)
+%?mp<%xd(B)||%xd(A)>
+
+# Shuffle
+%V(56,111,18,18,-)
+%?ps<%xd(C)||>
+
+#-----------------------------------------
+# PROGRESS BAR W/TIME DISPLAY
+#-----------------------------------------
+# Progress Bar
+%V(57,225,208,9,-)
+%pb(0,0,208,9,F,backdrop,E)
+
+# Time Display
+# - current time
+%V(18,222,28,18,2)
+%al%pc
+
+# - time left
+%V(282,222,28,18,2)
+%ar%pr
+
+#-----------------------------------------
+# LOCK SCREEN
+#-----------------------------------------
+%?mh<%Vd(lockscreen)|>
+
+# Clear Screen & Display BG
+%Vl(lockscreen,0,0,320,240,-)
+%xd(L)

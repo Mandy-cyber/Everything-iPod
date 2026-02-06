@@ -1,0 +1,68 @@
+# Minecraft (Plains Biome Edition) - Status Bar Screen
+# Version: 1.0 (Feb 6, 2026)
+# License: CC-BY-SA
+# Author: https://github.com/Mandy-cyber
+# Platform: iPod Classic/Video (320x240)
+
+# Background Image
+%X(sbs.bmp)
+
+#-----------------------------------------
+# PRELOADING & SETUP
+#-----------------------------------------
+# Preload Cover Art
+%Cl(0,0,37,37)
+
+# Preload Images
+%xl(U,usb_screen.bmp)
+%xl(L,lock_screen.bmp)
+%xl(P,player_skin.bmp)
+
+# Font Definitions
+%Fl(2,14-OpenSans-SemiBold.fnt)
+%Fl(3,16-PixelifySans-Regular.fnt)
+
+# Status Bar Off
+%wd
+
+#-----------------------------------------
+# TOP BAR
+#-----------------------------------------
+# iPod Text
+%V(20,5,35,30,2)
+%al iPod
+
+# Clock
+%V(145,5,35,30,2)
+%ac%cH:%cM
+
+# Battery
+%V(270,5,35,30,2)
+%ar%bl%%
+
+#-----------------------------------------
+# ALBUM ART DISPLAY
+#-----------------------------------------
+%V(254,52,37,37,-)
+%Cd
+
+#-----------------------------------------
+# PLAYER SKIN DISPLAY
+#-----------------------------------------
+%V(240,110,64,120,-)
+%xd(P)
+
+#-----------------------------------------
+# BROWSING
+#-----------------------------------------
+# Menu list
+%Vi(-,60,45,153,180,3)
+
+#-----------------------------------------
+# USB SCREEN
+#-----------------------------------------
+%?if(%cs, =, 21)<%Vd(usb)|>
+
+# Clear Screen & Display BG
+%Vl(usb,0,0,320,240,-)
+%xd(U)
