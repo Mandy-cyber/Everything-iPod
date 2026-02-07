@@ -102,10 +102,12 @@ def extract_metadata_from_path(file_path: str) -> Optional[dict]:
         elif '_' in song_name:
             song_name = song_name.split('_', 1)[1]
 
-        # remove track number prefix (e.g., "01. Song")
+        # remove track number prefix (e.g., "01. Song" or "1-01. Song")
         parts = song_name.split('.', 1)
-        if len(parts) == 2 and parts[0].strip().isdigit():
-            song_name = parts[1]
+        if len(parts) == 2:
+            prefix = parts[0].strip()
+            if prefix.isdigit() or re.match(r'^\d+-\d+$', prefix):
+                song_name = parts[1]
 
         song_name = song_name.strip()
 
@@ -275,10 +277,12 @@ def fix_filenames_in_db(db_type: str = 'local', db_path: str = DEFAULT_DB_PATH) 
                         song_name = song_name[:-len(ext)]
                         break
 
-                # remove track number prefix (e.g., "01. " or "1 ")
+                # remove track number prefix (e.g., "01. ", "1 ", or "1-01. ")
                 parts = song_name.split('.', 1)
-                if len(parts) == 2 and parts[0].strip().isdigit():
-                    song_name = parts[1].strip()
+                if len(parts) == 2:
+                    prefix = parts[0].strip()
+                    if prefix.isdigit() or re.match(r'^\d+-\d+$', prefix):
+                        song_name = parts[1].strip()
 
                 # store song name mappings
                 actual_songs[song_key][song_name] = song_name
