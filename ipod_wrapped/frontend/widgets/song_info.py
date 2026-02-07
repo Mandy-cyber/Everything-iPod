@@ -2,11 +2,14 @@ import gi
 gi.require_version('Gtk', '4.0')
 from gi.repository import Gtk, GLib
 
-def display_song_info(song_info: dict) -> Gtk.Box:
+from backend.constants import DEFAULT_SONG_INFO_IMAGE_SIZE
+
+def display_song_info(song_info: dict, image_size: int = DEFAULT_SONG_INFO_IMAGE_SIZE) -> Gtk.Box:
     """Displays info and the cover art for the song
 
     Args:
         song_info (dict): The info to display about the song
+        image_size (int): Pixel size for the cover art image
 
     Returns:
         Gtk.Box: The box with the display
@@ -24,7 +27,7 @@ def display_song_info(song_info: dict) -> Gtk.Box:
     # left side: cover image
     image = Gtk.Image()
     image.set_from_file(art_path)
-    image.set_pixel_size(120)
+    image.set_pixel_size(image_size)
     image.add_css_class('song-page-image')
     header_box.append(image)
     

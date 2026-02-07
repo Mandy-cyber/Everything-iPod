@@ -115,6 +115,8 @@ def _open_settings_dialog(window: Gtk.ApplicationWindow,
     
     # create and display dialog
     dialog = create_settings_dialog(window, error_banner, success_banner)
+    if hasattr(window, 'current_tier') and window.current_tier:
+        dialog.add_css_class(window.current_tier)
     dialog.present(window)
     
 def _open_about_dialog(window: Gtk.ApplicationWindow, revealer: Gtk.Revealer) -> None:
@@ -167,4 +169,6 @@ def _open_start_wrapped_dialog(window: Gtk.ApplicationWindow,
     toolbar_view.add_top_bar(header_bar)
 
     dialog.set_child(toolbar_view)
+    if hasattr(window, 'current_tier') and window.current_tier:
+        dialog.add_css_class(window.current_tier)
     dialog.present(window)

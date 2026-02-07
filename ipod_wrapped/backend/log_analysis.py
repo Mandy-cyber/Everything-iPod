@@ -350,10 +350,12 @@ class LogAnalyser:
                 song_wout_ext = song[:-len(ext)]
                 break
 
-        # remove track number prefix (e.g., "01. " or "1 ")
+        # remove track number prefix (e.g., "01. ", "1 ", or "1-01. ")
         parts = song_wout_ext.split('.', 1)
-        if len(parts) == 2 and parts[0].strip().isdigit():
-            song_wout_ext = parts[1]
+        if len(parts) == 2:
+            prefix = parts[0].strip()
+            if prefix.isdigit() or re.match(r'^\d+-\d+$', prefix):
+                song_wout_ext = parts[1]
 
         return self.fix_explicit_label(song_wout_ext.strip())
 

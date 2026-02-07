@@ -9,9 +9,19 @@ gi.require_version("GtkSource", "5")
 gi.require_version('Pango', '1.0')
 from gi.repository import Gtk, GtkSource, Adw, Pango
 
-from backend import find_top_genres, find_top_artists, find_top_albums, find_top_songs, load_stats_from_db, get_total_listening_time 
+from backend import find_top_genres, find_top_artists, find_top_albums, find_top_songs, load_stats_from_db, get_total_listening_time
+from backend.constants import (
+    DEFAULT_SCALE_TIER,
+    DEFAULT_VISUAL_LIST_ART_SIZE, DEFAULT_VISUAL_LIST_ROW_HEIGHT,
+    DEFAULT_VISUAL_LIST_NUM_WIDTH, DEFAULT_VISUAL_SUMMARY_ART_SIZE,
+    DEFAULT_VISUAL_LIST_MAX_CHARS, DEFAULT_VISUAL_SUMMARY_MAX_CHARS,
+    DEFAULT_VISUAL_PAGE_MARGIN,
+    VISUAL_LIST_ART_SIZES, VISUAL_LIST_ROW_HEIGHTS,
+    VISUAL_LIST_NUM_WIDTHS, VISUAL_SUMMARY_ART_SIZES,
+    VISUAL_LIST_MAX_CHARS, VISUAL_SUMMARY_MAX_CHARS, VISUAL_PAGE_MARGINS,
+)
 
-# TODO: 
+# TODO:
 # - add clear button to date range
 # - change title entry to on-changed vs on-activated
 
@@ -34,6 +44,7 @@ class StatsFilters:
             'max_genres': self.DEFAULT_MAX,
         }
         self.stat_filter_box = None
+        self.tier = DEFAULT_SCALE_TIER
         
     def _create_metadata_filter_box(self) -> Gtk.Box:
         """Creates the 'Mode', 'Date Range', and 'Title' filter boxes.
@@ -258,12 +269,19 @@ class StatsFilters:
     
     def _create_visual_mode_list_page(self, category: str, data: list) -> Gtk.Box:
         """Creates a Spotify Wrapped-esque view of the given data"""
+        # tier-based sizes
+        art_size = VISUAL_LIST_ART_SIZES.get(self.tier, DEFAULT_VISUAL_LIST_ART_SIZE)
+        row_height = VISUAL_LIST_ROW_HEIGHTS.get(self.tier, DEFAULT_VISUAL_LIST_ROW_HEIGHT)
+        num_width = VISUAL_LIST_NUM_WIDTHS.get(self.tier, DEFAULT_VISUAL_LIST_NUM_WIDTH)
+        max_chars = VISUAL_LIST_MAX_CHARS.get(self.tier, DEFAULT_VISUAL_LIST_MAX_CHARS)
+        margin = VISUAL_PAGE_MARGINS.get(self.tier, DEFAULT_VISUAL_PAGE_MARGIN)
+
         # setup page
         page = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
         page.set_halign(Gtk.Align.FILL)
         page.set_valign(Gtk.Align.CENTER)
-        page.set_margin_start(40)
-        page.set_margin_end(40)
+        page.set_margin_start(margin)
+        page.set_margin_end(margin)
         page.add_css_class('stats-visual-page-box')
         page.add_css_class(f'stats-visual-page-box-{category}s')
 
@@ -280,14 +298,14 @@ class StatsFilters:
 
             # item box
             item_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
-            item_box.set_size_request(-1, 50)
+            item_box.set_size_request(-1, row_height)
             item_box.set_halign(Gtk.Align.CENTER)
             item_box.set_valign(Gtk.Align.CENTER)
             item_box.add_css_class('top-x-item-box')
 
             # left: item number
             item_num = Gtk.Label(label=str(idx))
-            item_num.set_size_request(30, -1)
+            item_num.set_size_request(num_width, -1)
             item_num.set_halign(Gtk.Align.CENTER)
             item_num.set_valign(Gtk.Align.CENTER)
             item_num.add_css_class('top-x-item-num')
@@ -295,7 +313,7 @@ class StatsFilters:
 
             # middle: album cover
             art_container = Gtk.Box()
-            art_container.set_size_request(40, 40)
+            art_container.set_size_request(art_size, art_size)
             art_container.set_halign(Gtk.Align.CENTER)
             art_container.set_valign(Gtk.Align.CENTER)
 
@@ -317,7 +335,7 @@ class StatsFilters:
             val_label = Gtk.Label(label=val)
             val_label.set_xalign(0.0)
             val_label.set_ellipsize(Pango.EllipsizeMode.END)
-            val_label.set_max_width_chars(25)
+            val_label.set_max_width_chars(max_chars)
             val_label.add_css_class('top-x-item-value')
             text_box.append(val_label)
 
@@ -325,7 +343,7 @@ class StatsFilters:
                 artist_label = Gtk.Label(label=artist)
                 artist_label.set_xalign(0.0)
                 artist_label.set_ellipsize(Pango.EllipsizeMode.END)
-                artist_label.set_max_width_chars(25)
+                artist_label.set_max_width_chars(max_chars)
                 artist_label.add_css_class('top-x-item-artist')
                 text_box.append(artist_label)
 
@@ -336,6 +354,10 @@ class StatsFilters:
           
     def _create_visual_mode_summary_page(self, data: dict) -> Gtk.Box:
         """Creates a Spotify Wrapped-esque summary page"""
+        # tier-based sizes
+        summary_art = VISUAL_SUMMARY_ART_SIZES.get(self.tier, DEFAULT_VISUAL_SUMMARY_ART_SIZE)
+        summary_max_chars = VISUAL_SUMMARY_MAX_CHARS.get(self.tier, DEFAULT_VISUAL_SUMMARY_MAX_CHARS)
+
         # setup
         page = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
         page.set_halign(Gtk.Align.CENTER)
@@ -349,7 +371,7 @@ class StatsFilters:
 
             if cover_art and os.path.exists(cover_art):
                 album_art_img = Gtk.Picture.new_for_filename(cover_art)
-                album_art_img.set_size_request(100, 100)
+                album_art_img.set_size_request(summary_art, summary_art)
                 album_art_img.set_content_fit(Gtk.ContentFit.COVER)
                 album_art_img.set_halign(Gtk.Align.CENTER)
                 album_art_img.set_valign(Gtk.Align.CENTER)
@@ -358,7 +380,7 @@ class StatsFilters:
                 page.append(album_art_img)
             else:
                 art_container = Gtk.Box()
-                art_container.set_size_request(100, 100)
+                art_container.set_size_request(summary_art, summary_art)
                 art_container.set_halign(Gtk.Align.CENTER)
                 art_container.set_valign(Gtk.Align.CENTER)
                 art_container.set_margin_bottom(20)
@@ -385,7 +407,7 @@ class StatsFilters:
                 artist_label = Gtk.Label(label=f"{idx} {artist_name}")
                 artist_label.set_xalign(0.0)
                 artist_label.set_ellipsize(Pango.EllipsizeMode.END)
-                artist_label.set_max_width_chars(20)
+                artist_label.set_max_width_chars(summary_max_chars)
                 artist_label.add_css_class('summary-list-item')
                 artists_box.append(artist_label)
 
@@ -406,7 +428,7 @@ class StatsFilters:
                 song_label = Gtk.Label(label=f"{idx} {song_name}")
                 song_label.set_xalign(0.0)
                 song_label.set_ellipsize(Pango.EllipsizeMode.END)
-                song_label.set_max_width_chars(20)
+                song_label.set_max_width_chars(summary_max_chars)
                 song_label.add_css_class('summary-list-item')
                 songs_box.append(song_label)
 
