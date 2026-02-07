@@ -3,6 +3,10 @@ gi.require_version('Gtk', '4.0')
 from gi.repository import Gtk, GLib
 
 from backend import has_data, create_genre_mappings
+from backend.constants import (
+    DEFAULT_GENRE_TAG_SIZE, DEFAULT_GENRE_RIGHT_PANE_WIDTH,
+    GENRE_TAG_SIZES, GENRE_RIGHT_PANE_WIDTHS,
+)
 from ..widgets.genre_tag import create_genre_tag
 
 
@@ -13,7 +17,7 @@ class GenresPage(Gtk.ScrolledWindow):
         super().__init__()
 
         # setup
-        self.TAG_SIZE = 50
+        self.TAG_SIZE = DEFAULT_GENRE_TAG_SIZE
         self.toggle_bottom_bar = toggle_bottom_bar_callback
         self.open_start_wrapped = None
         self.db_type = db_type
@@ -30,7 +34,7 @@ class GenresPage(Gtk.ScrolledWindow):
         sw_right.add_css_class('genre-breakdown-scrolled')
 
         self.right_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-        self.right_box.set_size_request(215, -1)
+        self.right_box.set_size_request(DEFAULT_GENRE_RIGHT_PANE_WIDTH, -1)
         self.right_box.add_css_class('genre-breakdown-pane')
         sw_right.set_child(self.right_box)
         
@@ -92,6 +96,22 @@ class GenresPage(Gtk.ScrolledWindow):
         """Set the callback to open the 'Start Wrapped' popup"""
         self.open_start_wrapped = callback
         self._load_genre_tags()
+
+    def rescale(self, tier: str) -> None:
+        """Rescale genre tag sizes and right pane width for the given tier"""
+        self.TAG_SIZE = GENRE_TAG_SIZES.get(tier, DEFAULT_GENRE_TAG_SIZE)
+        tag_btn_size = self.TAG_SIZE + 5
+
+        # resize existing tags
+        child = self.flowbox.get_first_child()
+        while child:
+            button = child.get_child() if hasattr(child, 'get_child') else child
+            button.set_size_request(tag_btn_size, tag_btn_size)
+            child = child.get_next_sibling()
+
+        # resize right pane
+        pane_width = GENRE_RIGHT_PANE_WIDTHS.get(tier, DEFAULT_GENRE_RIGHT_PANE_WIDTH)
+        self.right_box.set_size_request(pane_width, -1)
 
     def refresh(self) -> None:
         """Refresh the page by reloading genres from database"""

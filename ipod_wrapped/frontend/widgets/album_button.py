@@ -7,10 +7,11 @@ gi.require_foreign('cairo')
 from gi.repository import Gtk, Gdk, Gio, Pango, GdkPixbuf, Adw, GLib
 
 from backend import grab_all_songs, ms_to_mmss
+from backend.constants import DEFAULT_SONG_INFO_IMAGE_SIZE
 from .songs_table import create_song_store, create_song_selection_model, create_songs_table, Song
 from .song_info import display_song_info
 
-def create_album_button(db_type: str, db_path: str, album_art_dir: str, album_info: dict, nav_view: Adw.NavigationView, image_size: int = 120) -> Gtk.Button:
+def create_album_button(db_type: str, db_path: str, album_art_dir: str, album_info: dict, nav_view: Adw.NavigationView, image_size: int = 120, get_song_image_size=None) -> Gtk.Button:
     """Creates a button with Album Art, Name, and Artist.
 
     Args:
@@ -20,6 +21,7 @@ def create_album_button(db_type: str, db_path: str, album_art_dir: str, album_in
         album_info (dict): Album metadata containing art, name, artist, genres, songs
         nav_view (Adw.NavigationView): Navigation view to push detail page onto
         image_size (int): Size of the album art image
+        get_song_image_size (callable): Returns current scaled image size for song info display
 
     Returns:
         Gtk.Button: The button with album art and info
@@ -61,10 +63,10 @@ def create_album_button(db_type: str, db_path: str, album_art_dir: str, album_in
     box.append(artist_label)
 
     button.set_child(box)
-    button.connect("clicked", lambda btn: _show_album_info(album_info, db_type, db_path, album_art_dir, nav_view))
+    button.connect("clicked", lambda btn: _show_album_info(album_info, db_type, db_path, album_art_dir, nav_view, get_song_image_size))
     return button
 
-def _show_album_info(album_info: dict, db_type: str, db_path: str, album_art_dir: str, nav_view: Adw.NavigationView) -> None:
+def _show_album_info(album_info: dict, db_type: str, db_path: str, album_art_dir: str, nav_view: Adw.NavigationView, get_song_image_size=None) -> None:
     """Shows the given album info when an album cover is clicked
     Absolutely insanity how chunky this function got. TODO: come back and make better
     """
@@ -142,7 +144,8 @@ def _show_album_info(album_info: dict, db_type: str, db_path: str, album_art_dir
                 child = song_info_box.get_first_child()
 
             # rebuild
-            song_info_widget = display_song_info(song_data)
+            img_size = get_song_image_size() if get_song_image_size else DEFAULT_SONG_INFO_IMAGE_SIZE
+            song_info_widget = display_song_info(song_data, image_size=img_size)
             song_info_box.append(song_info_widget)
             song_info_box.set_visible(True)
 
@@ -153,7 +156,8 @@ def _show_album_info(album_info: dict, db_type: str, db_path: str, album_art_dir
         def select_first():
             selection.set_selected(0)
             # manually trigger display
-            song_info_widget = display_song_info(songs_data[0])
+            img_size = get_song_image_size() if get_song_image_size else DEFAULT_SONG_INFO_IMAGE_SIZE
+            song_info_widget = display_song_info(songs_data[0], image_size=img_size)
             song_info_box.append(song_info_widget)
             song_info_box.set_visible(True)
             return False

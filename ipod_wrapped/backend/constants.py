@@ -32,6 +32,91 @@ else:
 DEFAULT_DB_PATH = STORAGE_DIR / "ipod_wrapped.db"
 DEFAULT_ALBUM_ART_DIR = STORAGE_DIR / "album_art"
 
+# responsive scaling - default sizes and per-tier sizes
+DEFAULT_SCALE_TIER = 'scale-compact'
+
+DEFAULT_ALBUM_IMAGE_SIZE = 120
+DEFAULT_GENRE_TAG_SIZE = 50
+DEFAULT_GENRE_RIGHT_PANE_WIDTH = 215
+DEFAULT_GENRE_HEADER_IMAGE_SIZE = 70
+DEFAULT_GENRE_SONG_IMAGE_SIZE = 30
+DEFAULT_SONG_INFO_IMAGE_SIZE = 120
+
+ALBUM_IMAGE_SIZES = {
+    'scale-compact': DEFAULT_ALBUM_IMAGE_SIZE,
+    'scale-medium': 156,
+    'scale-large': 240,
+}
+GENRE_TAG_SIZES = {
+    'scale-compact': DEFAULT_GENRE_TAG_SIZE,
+    'scale-medium': 65,
+    'scale-large': 100,
+}
+GENRE_RIGHT_PANE_WIDTHS = {
+    'scale-compact': DEFAULT_GENRE_RIGHT_PANE_WIDTH,
+    'scale-medium': 280,
+    'scale-large': 430,
+}
+GENRE_HEADER_IMAGE_SIZES = {
+    'scale-compact': DEFAULT_GENRE_HEADER_IMAGE_SIZE,
+    'scale-medium': 91,
+    'scale-large': 140,
+}
+GENRE_SONG_IMAGE_SIZES = {
+    'scale-compact': DEFAULT_GENRE_SONG_IMAGE_SIZE,
+    'scale-medium': 39,
+    'scale-large': 60,
+}
+SONG_INFO_IMAGE_SIZES = {
+    'scale-compact': DEFAULT_SONG_INFO_IMAGE_SIZE,
+    'scale-medium': 156,
+    'scale-large': 240,
+}
+DEFAULT_VISUAL_LIST_ART_SIZE = 40
+DEFAULT_VISUAL_LIST_ROW_HEIGHT = 50
+DEFAULT_VISUAL_LIST_NUM_WIDTH = 30
+DEFAULT_VISUAL_SUMMARY_ART_SIZE = 100
+
+VISUAL_LIST_ART_SIZES = {
+    'scale-compact': DEFAULT_VISUAL_LIST_ART_SIZE,
+    'scale-medium': 52,
+    'scale-large': 64,
+}
+VISUAL_LIST_ROW_HEIGHTS = {
+    'scale-compact': DEFAULT_VISUAL_LIST_ROW_HEIGHT,
+    'scale-medium': 65,
+    'scale-large': 75,
+}
+VISUAL_LIST_NUM_WIDTHS = {
+    'scale-compact': DEFAULT_VISUAL_LIST_NUM_WIDTH,
+    'scale-medium': 39,
+    'scale-large': 48,
+}
+VISUAL_SUMMARY_ART_SIZES = {
+    'scale-compact': DEFAULT_VISUAL_SUMMARY_ART_SIZE,
+    'scale-medium': 130,
+    'scale-large': 160,
+}
+DEFAULT_VISUAL_LIST_MAX_CHARS = 25
+DEFAULT_VISUAL_SUMMARY_MAX_CHARS = 20
+DEFAULT_VISUAL_PAGE_MARGIN = 40
+
+VISUAL_LIST_MAX_CHARS = {
+    'scale-compact': DEFAULT_VISUAL_LIST_MAX_CHARS,
+    'scale-medium': 32,
+    'scale-large': 40,
+}
+VISUAL_SUMMARY_MAX_CHARS = {
+    'scale-compact': DEFAULT_VISUAL_SUMMARY_MAX_CHARS,
+    'scale-medium': 25,
+    'scale-large': 35,
+}
+VISUAL_PAGE_MARGINS = {
+    'scale-compact': DEFAULT_VISUAL_PAGE_MARGIN,
+    'scale-medium': 50,
+    'scale-large': 60,
+}
+
 # lastfm
 lastfm_root = 'http://ws.audioscrobbler.com'
 user_auth_root = 'http://www.last.fm/api/auth'
