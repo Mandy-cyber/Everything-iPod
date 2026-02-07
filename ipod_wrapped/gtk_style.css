@@ -533,6 +533,15 @@ headerbar viewswitcher label {
 .scale-medium .stats-indiv-stat-box label { font-size: 16px; }
 .scale-medium .songs-table-cell { font-size: 14px; }
 .scale-medium .songs-table header button { font-size: 14px; }
+.scale-medium .genre-tag { font-size: 12px; }
+.scale-medium .stats-pg-filters button { font-size: 14px; }
+.scale-medium .stats-pg-filters entry { font-size: 14px; }
+.scale-medium .stats-pg-filters dropdown { font-size: 14px; }
+.scale-medium .stats-pg-filters spinbutton { font-size: 14px; }
+.scale-medium .start-wrapped-btn { font-size: 14px; }
+.scale-medium .settings-box button { font-size: 14px; }
+.scale-medium .settings-box entry { font-size: 14px; }
+.scale-medium .settings-box label { font-size: 14px; }
 .scale-medium .stats-pg-generate-btn { font-size: 14px; min-height: 40px; }
 .scale-medium .nav-menu-icon,
 .scale-medium .nav-start-icon,
@@ -561,6 +570,15 @@ headerbar viewswitcher label {
 .scale-large .song-page-genres-label { font-size: 20px; }
 .scale-large .songs-table-cell { font-size: 18px; }
 .scale-large .songs-table header button { font-size: 18px; }
+.scale-large .genre-tag { font-size: 16px; }
+.scale-large .stats-pg-filters button { font-size: 18px; }
+.scale-large .stats-pg-filters entry { font-size: 18px; }
+.scale-large .stats-pg-filters dropdown { font-size: 18px; }
+.scale-large .stats-pg-filters spinbutton { font-size: 18px; }
+.scale-large .start-wrapped-btn { font-size: 18px; }
+.scale-large .settings-box button { font-size: 18px; }
+.scale-large .settings-box entry { font-size: 18px; }
+.scale-large .settings-box label { font-size: 18px; }
 .scale-large .stats-pg-generate-btn { font-size: 18px; min-height: 50px; }
 .scale-large .nav-menu-icon,
 .scale-large .nav-start-icon,

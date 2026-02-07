@@ -14,8 +14,11 @@ from backend.constants import (
     DEFAULT_SCALE_TIER,
     DEFAULT_VISUAL_LIST_ART_SIZE, DEFAULT_VISUAL_LIST_ROW_HEIGHT,
     DEFAULT_VISUAL_LIST_NUM_WIDTH, DEFAULT_VISUAL_SUMMARY_ART_SIZE,
+    DEFAULT_VISUAL_LIST_MAX_CHARS, DEFAULT_VISUAL_SUMMARY_MAX_CHARS,
+    DEFAULT_VISUAL_PAGE_MARGIN,
     VISUAL_LIST_ART_SIZES, VISUAL_LIST_ROW_HEIGHTS,
     VISUAL_LIST_NUM_WIDTHS, VISUAL_SUMMARY_ART_SIZES,
+    VISUAL_LIST_MAX_CHARS, VISUAL_SUMMARY_MAX_CHARS, VISUAL_PAGE_MARGINS,
 )
 
 # TODO:
@@ -270,13 +273,15 @@ class StatsFilters:
         art_size = VISUAL_LIST_ART_SIZES.get(self.tier, DEFAULT_VISUAL_LIST_ART_SIZE)
         row_height = VISUAL_LIST_ROW_HEIGHTS.get(self.tier, DEFAULT_VISUAL_LIST_ROW_HEIGHT)
         num_width = VISUAL_LIST_NUM_WIDTHS.get(self.tier, DEFAULT_VISUAL_LIST_NUM_WIDTH)
+        max_chars = VISUAL_LIST_MAX_CHARS.get(self.tier, DEFAULT_VISUAL_LIST_MAX_CHARS)
+        margin = VISUAL_PAGE_MARGINS.get(self.tier, DEFAULT_VISUAL_PAGE_MARGIN)
 
         # setup page
         page = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
         page.set_halign(Gtk.Align.FILL)
         page.set_valign(Gtk.Align.CENTER)
-        page.set_margin_start(40)
-        page.set_margin_end(40)
+        page.set_margin_start(margin)
+        page.set_margin_end(margin)
         page.add_css_class('stats-visual-page-box')
         page.add_css_class(f'stats-visual-page-box-{category}s')
 
@@ -330,7 +335,7 @@ class StatsFilters:
             val_label = Gtk.Label(label=val)
             val_label.set_xalign(0.0)
             val_label.set_ellipsize(Pango.EllipsizeMode.END)
-            val_label.set_max_width_chars(25)
+            val_label.set_max_width_chars(max_chars)
             val_label.add_css_class('top-x-item-value')
             text_box.append(val_label)
 
@@ -338,7 +343,7 @@ class StatsFilters:
                 artist_label = Gtk.Label(label=artist)
                 artist_label.set_xalign(0.0)
                 artist_label.set_ellipsize(Pango.EllipsizeMode.END)
-                artist_label.set_max_width_chars(25)
+                artist_label.set_max_width_chars(max_chars)
                 artist_label.add_css_class('top-x-item-artist')
                 text_box.append(artist_label)
 
@@ -351,6 +356,7 @@ class StatsFilters:
         """Creates a Spotify Wrapped-esque summary page"""
         # tier-based sizes
         summary_art = VISUAL_SUMMARY_ART_SIZES.get(self.tier, DEFAULT_VISUAL_SUMMARY_ART_SIZE)
+        summary_max_chars = VISUAL_SUMMARY_MAX_CHARS.get(self.tier, DEFAULT_VISUAL_SUMMARY_MAX_CHARS)
 
         # setup
         page = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
@@ -401,7 +407,7 @@ class StatsFilters:
                 artist_label = Gtk.Label(label=f"{idx} {artist_name}")
                 artist_label.set_xalign(0.0)
                 artist_label.set_ellipsize(Pango.EllipsizeMode.END)
-                artist_label.set_max_width_chars(20)
+                artist_label.set_max_width_chars(summary_max_chars)
                 artist_label.add_css_class('summary-list-item')
                 artists_box.append(artist_label)
 
@@ -422,7 +428,7 @@ class StatsFilters:
                 song_label = Gtk.Label(label=f"{idx} {song_name}")
                 song_label.set_xalign(0.0)
                 song_label.set_ellipsize(Pango.EllipsizeMode.END)
-                song_label.set_max_width_chars(20)
+                song_label.set_max_width_chars(summary_max_chars)
                 song_label.add_css_class('summary-list-item')
                 songs_box.append(song_label)
 

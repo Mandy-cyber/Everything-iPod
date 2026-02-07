@@ -80,22 +80,41 @@ DEFAULT_VISUAL_SUMMARY_ART_SIZE = 100
 VISUAL_LIST_ART_SIZES = {
     'scale-compact': DEFAULT_VISUAL_LIST_ART_SIZE,
     'scale-medium': 52,
-    'scale-large': 80,
+    'scale-large': 64,
 }
 VISUAL_LIST_ROW_HEIGHTS = {
     'scale-compact': DEFAULT_VISUAL_LIST_ROW_HEIGHT,
     'scale-medium': 65,
-    'scale-large': 100,
+    'scale-large': 75,
 }
 VISUAL_LIST_NUM_WIDTHS = {
     'scale-compact': DEFAULT_VISUAL_LIST_NUM_WIDTH,
     'scale-medium': 39,
-    'scale-large': 60,
+    'scale-large': 48,
 }
 VISUAL_SUMMARY_ART_SIZES = {
     'scale-compact': DEFAULT_VISUAL_SUMMARY_ART_SIZE,
     'scale-medium': 130,
-    'scale-large': 200,
+    'scale-large': 160,
+}
+DEFAULT_VISUAL_LIST_MAX_CHARS = 25
+DEFAULT_VISUAL_SUMMARY_MAX_CHARS = 20
+DEFAULT_VISUAL_PAGE_MARGIN = 40
+
+VISUAL_LIST_MAX_CHARS = {
+    'scale-compact': DEFAULT_VISUAL_LIST_MAX_CHARS,
+    'scale-medium': 32,
+    'scale-large': 40,
+}
+VISUAL_SUMMARY_MAX_CHARS = {
+    'scale-compact': DEFAULT_VISUAL_SUMMARY_MAX_CHARS,
+    'scale-medium': 25,
+    'scale-large': 35,
+}
+VISUAL_PAGE_MARGINS = {
+    'scale-compact': DEFAULT_VISUAL_PAGE_MARGIN,
+    'scale-medium': 50,
+    'scale-large': 60,
 }
 
 # lastfm
